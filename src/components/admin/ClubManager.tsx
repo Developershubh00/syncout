@@ -85,7 +85,7 @@ export function ClubManager({ initial }: { initial: Club[] }) {
     setF((s) => ({ ...s, [k]: e.target.value }));
 
   return (
-    <div className="px-4 pt-6">
+    <div className="px-4 pt-6 lg:px-0 lg:pt-8">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-[24px] font-extrabold tracking-tight">Clubs</h1>
         <Button size="sm" onClick={startNew}><Plus className="size-4" /> Add</Button>

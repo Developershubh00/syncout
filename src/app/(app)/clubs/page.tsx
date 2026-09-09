@@ -1,6 +1,6 @@
 import { TopBar } from "@/components/TopBar";
 import { ClubCard } from "@/components/Cards";
-import { getClubs } from "@/lib/queries";
+import { cachedClubs } from "@/lib/cache";
 import { Empty } from "@/components/Empty";
 
 export const revalidate = 300;
@@ -18,7 +18,7 @@ export default async function ClubsPage({
   searchParams: Promise<{ city?: string }>;
 }) {
   const { city = "new-delhi" } = await searchParams;
-  const list = await getClubs(city, 80);
+  const list = await cachedClubs(city, 80);
 
   return (
     <>

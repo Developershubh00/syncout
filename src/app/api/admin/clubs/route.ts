@@ -4,6 +4,8 @@ import { clubs } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import { getAdmin } from "@/lib/session";
 import { clubSchema } from "@/lib/validators";
+import { revalidateTag } from "next/cache";
+import { TAGS } from "@/lib/cache";
 
 export async function GET() {
   if (!(await getAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -17,5 +19,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 422 });
 
   const [row] = await db.insert(clubs).values(parsed.data).returning();
+  // Without this a new club sits behind the cache for up to ten minutes.
+  revalidateTag(TAGS.clubs, "max");
   return NextResponse.json(row, { status: 201 });
 }

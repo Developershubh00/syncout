@@ -5,7 +5,7 @@ import { CutoffBanner } from "@/components/CutoffBanner";
 import { SectionHead } from "@/components/SectionHead";
 import { ClubCard, NightCard, OfferCard } from "@/components/Cards";
 import { CardSkeleton } from "@/components/ui/Skeleton";
-import { getClubs, getNights, getOffers } from "@/lib/queries";
+import { cachedClubs, cachedNights, cachedOffers } from "@/lib/cache";
 import { Empty } from "@/components/Empty";
 import { DesktopHero } from "@/components/DesktopHero";
 
@@ -32,9 +32,9 @@ export default async function Home({
 
 async function HomeBody({ city }: { city: string }) {
   const [nights, clubs, offers] = await Promise.all([
-    getNights({ citySlug: city, limit: 12 }),
-    getClubs(city, 14),
-    getOffers(),
+    cachedNights({ citySlug: city, limit: 12 }),
+    cachedClubs(city, 14),
+    cachedOffers(),
   ]);
 
   const featured = clubs.filter((c) => c.isFeatured);

@@ -1,6 +1,6 @@
 import { TopBar } from "@/components/TopBar";
 import { NightCard } from "@/components/Cards";
-import { getNights } from "@/lib/queries";
+import { cachedNights } from "@/lib/cache";
 import { friendlyDate } from "@/lib/utils";
 import { Empty } from "@/components/Empty";
 
@@ -13,7 +13,7 @@ export default async function NightsPage({
   searchParams: Promise<{ city?: string }>;
 }) {
   const { city = "new-delhi" } = await searchParams;
-  const nights = await getNights({ citySlug: city, limit: 90 });
+  const nights = await cachedNights({ citySlug: city, limit: 90 });
 
   // group by IST calendar day
   const groups = new Map<string, typeof nights>();

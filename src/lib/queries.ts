@@ -121,7 +121,26 @@ async function _getNight(slug: string) {
 }
 
 async function _getOffers() {
-  return db.select().from(offers).where(eq(offers.isActive, true)).orderBy(asc(offers.sortOrder));
+  const at = now();
+  const rows = await db
+    .select()
+    .from(offers)
+    .where(
+      and(
+        eq(offers.isActive, true),
+        // No end date means an evergreen perk; otherwise it must not have passed.
+        or(sql`${offers.validTill} is null`, gte(offers.validTill, at))
+      )
+    )
+    .orderBy(asc(offers.sortOrder));
+
+  return rows.map((o) => ({
+    ...o,
+    /** Ends within 36h — the UI shows these as tonight's specials. */
+    isToday: o.validTill
+      ? o.validTill.getTime() - at.getTime() <= 36 * 60 * 60 * 1000
+      : false,
+  }));
 }
 
 async function _getClubReviews(clubId: string) {
@@ -253,13 +272,39 @@ async function _getBookingByCode(code: string) {
 /* ── admin ── */
 
 async function _adminStats() {
-  const [[b], [pending], [c], [e]] = await Promise.all([
+  const at = now();
+  // Tonight = from now until 6am tomorrow, so a 1am booking still counts.
+  const dayEnd = new Date(at);
+  dayEnd.setHours(30, 0, 0, 0);
+
+  const [[b], [pending], [c], [e], [tonight], [approvedTonight], [heads]] = await Promise.all([
     db.select({ n: count() }).from(bookings),
     db.select({ n: count() }).from(bookings).where(eq(bookings.status, "pending")),
     db.select({ n: count() }).from(clubs),
-    db.select({ n: count() }).from(events).where(gte(events.startsAt, new Date())),
+    db.select({ n: count() }).from(events).where(gte(events.startsAt, at)),
+    db
+      .select({ n: count() })
+      .from(events)
+      .where(and(gte(events.startsAt, at), sql`${events.startsAt} < ${dayEnd}`)),
+    db
+      .select({ n: count() })
+      .from(bookings)
+      .where(eq(bookings.status, "approved")),
+    db
+      .select({ n: sql<number>`coalesce(sum(${bookings.totalGuests}), 0)::int` })
+      .from(bookings)
+      .where(eq(bookings.status, "approved")),
   ]);
-  return { bookings: b.n, pending: pending.n, clubs: c.n, upcoming: e.n };
+
+  return {
+    bookings: b.n,
+    pending: pending.n,
+    clubs: c.n,
+    upcoming: e.n,
+    tonight: tonight.n,
+    approved: approvedTonight.n,
+    heads: heads.n,
+  };
 }
 
 async function _adminBookings(status?: string, limit = 200) {
@@ -308,5 +353,13 @@ export const getEventCounts = safe(_getEventCounts, {
 export const searchAll = safe(_searchAll, { clubs: [], nights: [] });
 export const getUserBookings = safe(_getUserBookings, []);
 export const getBookingByCode = safe(_getBookingByCode, null);
-export const adminStats = safe(_adminStats, { bookings: 0, pending: 0, clubs: 0, upcoming: 0 });
+export const adminStats = safe(_adminStats, {
+  bookings: 0,
+  pending: 0,
+  clubs: 0,
+  upcoming: 0,
+  tonight: 0,
+  approved: 0,
+  heads: 0,
+});
 export const adminBookings = safe(_adminBookings, []);
