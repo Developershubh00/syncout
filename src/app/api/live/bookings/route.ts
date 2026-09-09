@@ -1,19 +1,31 @@
 import { db } from "@/db";
 import { bookings, events, clubs } from "@/db/schema";
 import { getUser } from "@/lib/session";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const POLL_MS = Number(process.env.LIVE_POLL_MS ?? 2500);
-// Stay under the platform's function ceiling, then let EventSource reconnect.
+/** Fast tick while a decision could land; slow tick when nothing is pending. */
+const HOT_MS = Number(process.env.LIVE_POLL_MS ?? 2000);
+const IDLE_MS = 20_000;
 const MAX_LIFETIME_MS = 50_000;
 
-type Snapshot = Record<string, string>;
+/**
+ * Deliberately narrow: two columns, one indexed predicate, no joins.
+ * This runs on a timer so its cost is the thing that matters most.
+ */
+async function statuses(userId: string) {
+  return db
+    .select({ id: bookings.id, status: bookings.status })
+    .from(bookings)
+    .where(eq(bookings.userId, userId));
+}
 
-async function snapshot(userId: string) {
-  const rows = await db
+/** Only called when something actually changed, so the joins are affordable. */
+async function detailsFor(ids: string[]) {
+  if (!ids.length) return [];
+  return db
     .select({
       id: bookings.id,
       code: bookings.code,
@@ -25,11 +37,7 @@ async function snapshot(userId: string) {
     .from(bookings)
     .innerJoin(events, eq(bookings.eventId, events.id))
     .innerJoin(clubs, eq(bookings.clubId, clubs.id))
-    .where(eq(bookings.userId, userId));
-
-  const map: Snapshot = {};
-  for (const r of rows) map[r.id] = r.status;
-  return { rows, map };
+    .where(inArray(bookings.id, ids));
 }
 
 export async function GET() {
@@ -51,40 +59,44 @@ export async function GET() {
         }
       };
 
-      let previous: Snapshot;
+      let previous = new Map<string, string>();
       try {
-        previous = (await snapshot(user.id)).map;
+        for (const r of await statuses(user.id)) previous.set(r.id, r.status);
       } catch {
         send("error", { message: "cannot reach the database" });
         controller.close();
         return;
       }
 
-      send("ready", { watching: Object.keys(previous).length });
+      const anyPending = () => [...previous.values()].some((s) => s === "pending");
+      send("ready", { watching: previous.size, pending: anyPending() });
 
       while (!closed && Date.now() - started < MAX_LIFETIME_MS) {
-        await new Promise((r) => setTimeout(r, POLL_MS));
+        await new Promise((r) => setTimeout(r, anyPending() ? HOT_MS : IDLE_MS));
+        if (Date.now() - started >= MAX_LIFETIME_MS) break;
+
         try {
-          const { rows, map } = await snapshot(user.id);
-          for (const row of rows) {
-            const before = previous[row.id];
-            if (before && before !== row.status) {
+          const rows = await statuses(user.id);
+          const changed = rows
+            .filter((r) => previous.has(r.id) && previous.get(r.id) !== r.status)
+            .map((r) => r.id);
+
+          if (changed.length) {
+            for (const d of await detailsFor(changed)) {
               send("status", {
-                id: row.id,
-                code: row.code,
-                from: before,
-                status: row.status,
-                reason: row.rejectionReason,
-                eventTitle: row.eventTitle,
-                clubName: row.clubName,
+                id: d.id,
+                code: d.code,
+                status: d.status,
+                reason: d.rejectionReason,
+                eventTitle: d.eventTitle,
+                clubName: d.clubName,
               });
             }
           }
-          previous = map;
+          previous = new Map(rows.map((r) => [r.id, r.status]));
         } catch {
           // A transient Neon blip shouldn't kill the stream.
         }
-        send("ping", { t: Date.now() });
       }
 
       closed = true;

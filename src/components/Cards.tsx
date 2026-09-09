@@ -19,13 +19,13 @@ export function ClubCard({
 }) {
   return (
     <Link href={`/clubs/${club.slug}`} className={cn("group block", width)}>
-      <div className="relative aspect-[3/4] overflow-hidden rounded-[18px] bg-raised">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-[18px] bg-raised ring-0 ring-red/0 transition-all duration-300 lg:group-hover:-translate-y-1 lg:group-hover:ring-2 lg:group-hover:ring-red/60">
         <Image
           src={club.coverImage || FALLBACK}
           alt=""
           fill
           sizes="180px"
-          className="object-cover transition-transform duration-500 group-active:scale-[1.04]"
+          className="object-cover transition-transform duration-500 group-active:scale-[1.04] lg:group-hover:scale-[1.06]"
         />
         <div className="scrim absolute inset-x-0 bottom-0 h-3/5" />
         {club.rating ? (
@@ -64,13 +64,13 @@ export function NightCard({
   const d = new Date(ev.startsAt);
   return (
     <Link href={`/nights/${ev.slug}`} className={cn("group block", wide ? "w-full" : "w-[270px]")}>
-      <div className="relative aspect-[16/10] overflow-hidden rounded-[18px] bg-raised">
+      <div className="relative aspect-[16/10] overflow-hidden rounded-[18px] bg-raised ring-0 ring-red/0 transition-all duration-300 lg:group-hover:-translate-y-1 lg:group-hover:ring-2 lg:group-hover:ring-red/60">
         <Image
           src={ev.poster || FALLBACK}
           alt=""
           fill
           sizes={wide ? "(max-width:512px) 100vw, 512px" : "290px"}
-          className="object-cover transition-transform duration-500 group-active:scale-[1.04]"
+          className="object-cover transition-transform duration-500 group-active:scale-[1.04] lg:group-hover:scale-[1.06]"
         />
         <div className="scrim absolute inset-x-0 bottom-0 h-2/3" />
         <span className="absolute left-2.5 top-2.5 rounded-lg bg-red px-2 py-1 text-[11px] font-bold tracking-tight">
