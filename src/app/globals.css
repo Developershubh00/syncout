@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────
+   SyncOut design tokens
+   Dark room, one red, one gold. Nothing else competes.
+   ───────────────────────────────────────────────────────── */
+@theme {
+  --color-ink: #08080a;
+  --color-surface: #121216;
+  --color-raised: #1b1b21;
+  --color-line: #26262e;
+  --color-line-soft: #1e1e25;
+
+  --color-red: #e4113c;
+  --color-red-hot: #ff3b5c;
+  --color-red-dim: #7c0a21;
+
+  --color-gold: #f2c14e;
+  --color-gold-dim: #6b5219;
+
+  --color-text: #f5f5f7;
+  --color-muted: #8e8e99;
+  --color-faint: #5a5a66;
+
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+
+  --radius-card: 18px;
+  --radius-sheet: 26px;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  background: var(--color-ink);
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+h1, h2, h3, .display {
+  font-family: var(--font-display);
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+
+/* horizontal rails — no visible scrollbar on mobile */
+.rail {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  padding-inline: 16px;
+  scroll-padding-left: 16px;
+}
+.rail::-webkit-scrollbar { display: none; }
+.rail > * { scroll-snap-align: start; flex: 0 0 auto; }
+
+/* full-bleed helper inside a padded container */
+.bleed { margin-inline: -16px; }
+
+/* the one decorative gradient we allow: photo → dark, for legibility */
+.scrim {
+  background: linear-gradient(
+    to top,
+    rgba(8, 8, 10, 0.96) 0%,
+    rgba(8, 8, 10, 0.72) 32%,
+    rgba(8, 8, 10, 0.08) 72%,
+    rgba(8, 8, 10, 0) 100%
+  );
+}
+
+.hairline { border-color: var(--color-line); }
+
+/* focus that's always visible on a dark ground */
+:focus-visible {
+  outline: 2px solid var(--color-red-hot);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ticket stub: the one bold element in the product */
+.stub-notch {
+  background-image:
+    radial-gradient(circle at 0 50%, transparent 9px, var(--color-surface) 9.5px),
+    radial-gradient(circle at 100% 50%, transparent 9px, var(--color-surface) 9.5px);
+  background-size: 51% 100%;
+  background-position: left, right;
+  background-repeat: no-repeat;
+}
+
+.dashed-tear {
+  border-top: 1.5px dashed var(--color-line);
+}
+
+/* iOS safe areas for the bottom tab bar */
+.pb-safe { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem); }
+.mb-tabbar { margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 74px); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* number inputs without spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; }
