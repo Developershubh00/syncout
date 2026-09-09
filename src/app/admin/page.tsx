@@ -11,11 +11,16 @@ export default async function AdminHome() {
   const [stats, pending] = await Promise.all([adminStats(), adminBookings("pending", 6)]);
 
   return (
-    <div className="px-4 pt-6">
-      <h1 className="font-display text-[24px] font-extrabold tracking-tight">Overview</h1>
+    <div className="px-4 pt-6 lg:px-0 lg:pt-8">
+      <h1 className="font-display text-[24px] font-extrabold tracking-tight lg:text-[30px]">
+        Overview
+      </h1>
 
-      <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
         <Stat n={stats.pending} label="Awaiting review" accent />
+        <Stat n={stats.tonight} label="Nights on tonight" />
+        <Stat n={stats.approved} label="Approved" />
+        <Stat n={stats.heads} label="Heads on lists" />
         <Stat n={stats.bookings} label="Total applications" />
         <Stat n={stats.upcoming} label="Upcoming nights" />
         <Stat n={stats.clubs} label="Venues" />

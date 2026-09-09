@@ -108,7 +108,34 @@ async function main() {
   console.log(`   ${rows.length} nights`);
 
   console.log("→ offers");
+  // Ends tonight, so the day-scoping is proven end to end.
+  const tonightEnds = new Date();
+  tonightEnds.setHours(30, 0, 0, 0);
+  const nextWeek = new Date(Date.now() + 7 * 864e5);
+
   await db.insert(offers).values([
+    {
+      title: "Sponsor night: open bar till 11",
+      subtitle: "Tonight only",
+      description:
+        "First hour is on the sponsor for anyone approved on tonight's list. Turn up before eleven and the tab is covered.",
+      image: inserted[2].coverImage,
+      clubId: inserted[2].id,
+      validTill: tonightEnds,
+      isActive: true,
+      sortOrder: 0,
+    },
+    {
+      title: "Ladies night residency",
+      subtitle: "Every Wednesday this month",
+      description:
+        "A resident DJ for the month and no cover for girls on the list, at every venue running a Wednesday.",
+      image: inserted[6].coverImage,
+      clubId: null,
+      validTill: nextWeek,
+      isActive: true,
+      sortOrder: 2,
+    },
     {
       title: "Food & drinks on us",
       subtitle: "Approved guestlist only",
