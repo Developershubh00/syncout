@@ -7,6 +7,7 @@ import { ClubCard, NightCard, OfferCard } from "@/components/Cards";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 import { getClubs, getNights, getOffers } from "@/lib/queries";
 import { Empty } from "@/components/Empty";
+import { DesktopHero } from "@/components/DesktopHero";
 
 export const revalidate = 120;
 
@@ -39,9 +40,28 @@ async function HomeBody({ city }: { city: string }) {
   const featured = clubs.filter((c) => c.isFeatured);
   const rest = clubs.filter((c) => !c.isFeatured);
 
+  const lead = nights[0];
+
   return (
     <>
-      <section className="pt-8">
+      <DesktopHero
+        nightCount={nights.length}
+        featured={
+          lead
+            ? {
+                slug: lead.slug,
+                title: lead.title,
+                poster: lead.poster,
+                startsAt: lead.startsAt,
+                musicType: lead.musicType,
+                clubName: lead.clubName,
+                clubArea: lead.clubArea,
+              }
+            : null
+        }
+      />
+
+      <section className="pt-8 lg:pt-0">
         <SectionHead
           title="Around town"
           sub={nights.length ? `${nights.length} nights taking applications` : undefined}
@@ -155,7 +175,7 @@ function HomeSkeleton() {
 
 function Footer() {
   return (
-    <footer className="mt-14 border-t border-line px-4 py-8 text-[12.5px] text-faint">
+    <footer className="mt-14 border-t border-line px-4 py-8 text-[12.5px] text-faint lg:hidden">
       <p className="font-display text-[17px] font-extrabold text-text">
         Sync<span className="text-red">Out</span>
       </p>
