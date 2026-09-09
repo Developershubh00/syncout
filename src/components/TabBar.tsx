@@ -18,7 +18,7 @@ export function TabBar() {
   if (path.startsWith("/admin")) return null;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-ink/85 backdrop-blur-xl">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-ink/85 backdrop-blur-xl lg:hidden">
       <ul className="mx-auto flex max-w-lg items-stretch pb-safe pt-1.5">
         {tabs.map(({ href, label, Icon }) => {
           const active = href === "/" ? path === "/" : path.startsWith(href);

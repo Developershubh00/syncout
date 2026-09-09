@@ -6,6 +6,9 @@ import "./load-env";
 import { db } from "./index";
 import { cities, clubs, events, offers, reviews } from "./schema";
 import { CITIES, CLUBS, EVENT_TEMPLATES } from "../data/venues";
+import { NCR_CLUBS } from "../data/venues-ncr";
+
+const ALL_CLUBS = [...CLUBS, ...NCR_CLUBS];
 import { slugify } from "../lib/utils";
 
 function nightAt(daysAhead: number, hour = 21) {
@@ -31,7 +34,7 @@ async function main() {
   const inserted = await db
     .insert(clubs)
     .values(
-      CLUBS.map((c, i) => ({
+      ALL_CLUBS.map((c, i) => ({
         name: c.name,
         slug: c.slug,
         citySlug: c.citySlug,

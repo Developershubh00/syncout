@@ -119,3 +119,24 @@ h1, h2, h3, .display {
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 input[type="number"] { -moz-appearance: textfield; }
+
+/* Desktop: a rail is a horizontal scroller on a phone and a grid on a
+   large screen. Cards are width-constrained on mobile, so the override
+   has to reset that too. */
+@media (min-width: 1024px) {
+  .rail {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    overflow: visible;
+    padding-inline: 0;
+  }
+  .rail > * {
+    flex: 1 1 auto;
+    width: auto !important;
+  }
+  .bleed { margin-inline: 0; }
+
+  /* Section headers and body copy sit flush with the 1280px container. */
+  .lg-flush { padding-inline: 0; }
+}

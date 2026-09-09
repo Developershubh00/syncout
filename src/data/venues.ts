@@ -30,6 +30,7 @@ export const CITIES = [
   { name: "New Delhi", slug: "new-delhi", state: "Delhi", sortOrder: 1 },
   { name: "Gurugram", slug: "gurugram", state: "Haryana", sortOrder: 2 },
   { name: "Noida", slug: "noida", state: "Uttar Pradesh", sortOrder: 3 },
+  { name: "Greater Noida", slug: "greater-noida", state: "Uttar Pradesh", sortOrder: 4 },
   { name: "Mumbai", slug: "mumbai", state: "Maharashtra", sortOrder: 4 },
   { name: "Jaipur", slug: "jaipur", state: "Rajasthan", sortOrder: 5 },
   { name: "Lucknow", slug: "lucknow", state: "Uttar Pradesh", sortOrder: 6 },

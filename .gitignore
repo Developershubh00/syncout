@@ -11,3 +11,8 @@ next-env.d.ts
 .DS_Store
 .patchlog.json
 .patch-backups
+
+# never let a pasted env file get committed
+env.local.txt
+*.env.txt
+*.bak

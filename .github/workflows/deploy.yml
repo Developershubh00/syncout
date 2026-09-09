@@ -15,6 +15,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Fail fast and say exactly what's missing, rather than letting the
+      # Vercel CLI die on an empty --token 40 seconds in.
+      - name: Check secrets
+        env:
+          TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          ORG: ${{ secrets.VERCEL_ORG_ID }}
+          PROJECT: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          missing=""
+          [ -z "$TOKEN" ]   && missing="$missing VERCEL_TOKEN"
+          [ -z "$ORG" ]     && missing="$missing VERCEL_ORG_ID"
+          [ -z "$PROJECT" ] && missing="$missing VERCEL_PROJECT_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repo secret(s):$missing"
+            echo ""
+            echo "Set them under Settings -> Secrets and variables -> Actions:"
+            echo "  VERCEL_TOKEN       vercel.com/account/tokens"
+            echo "  VERCEL_ORG_ID      .vercel/project.json after 'vercel link'"
+            echo "  VERCEL_PROJECT_ID  same file"
+            echo ""
+            echo "Or delete this workflow and let Vercel's own Git integration"
+            echo "deploy on push - it needs no secrets at all."
+            exit 1
+          fi
+          echo "All three secrets present."
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
