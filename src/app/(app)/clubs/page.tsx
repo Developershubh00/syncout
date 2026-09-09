@@ -47,7 +47,7 @@ export default async function ClubsPage({
       </div>
 
       {list.length ? (
-        <div className="grid grid-cols-2 gap-3 px-4 pb-4">
+        <div className="grid grid-cols-2 gap-3 px-4 pb-4 lg:grid-cols-4 lg:gap-5 lg:px-0 xl:grid-cols-5">
           {list.map((c) => (
             <ClubCard key={c.id} club={c} width="w-full" />
           ))}

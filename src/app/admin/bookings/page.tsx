@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getAdmin } from "@/lib/session";
 import { adminBookings } from "@/lib/queries";
 import { BookingRow } from "@/components/admin/BookingRow";
+import { BulkActions } from "@/components/admin/BulkActions";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,17 @@ export default async function AdminBookings({
 
   return (
     <div className="pt-6">
-      <h1 className="px-4 font-display text-[24px] font-extrabold tracking-tight">Guestlist</h1>
+      <div className="flex items-center gap-3 px-4 lg:px-0">
+        <h1 className="font-display text-[24px] font-extrabold tracking-tight lg:text-[30px]">
+          Guestlist
+        </h1>
+        <a
+          href="/api/admin/export"
+          className="ml-auto inline-flex h-9 items-center rounded-lg border border-line bg-raised px-3 text-[13px] font-semibold"
+        >
+          Export tonight&apos;s door list
+        </a>
+      </div>
 
       <div className="rail py-3.5">
         {FILTERS.map((f) => (
@@ -42,6 +53,10 @@ export default async function AdminBookings({
             {LABEL[f]}
           </Link>
         ))}
+      </div>
+
+      <div className="px-4 lg:px-0">
+        <BulkActions ids={rows.filter((r) => r.status === "pending").map((r) => r.id)} />
       </div>
 
       {rows.length === 0 ? (

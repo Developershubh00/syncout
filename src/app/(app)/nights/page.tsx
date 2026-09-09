@@ -46,7 +46,7 @@ export default async function NightsPage({
           <div className="sticky top-[57px] z-20 bg-ink/90 px-4 py-2 backdrop-blur">
             <h2 className="text-[14px] font-semibold text-muted">{day}</h2>
           </div>
-          <div className="mt-2 space-y-5 px-4">
+          <div className="mt-2 space-y-5 px-4 lg:grid lg:grid-cols-3 lg:gap-5 lg:space-y-0 lg:px-0 xl:grid-cols-4">
             {list.map((n) => (
               <NightCard
                 key={n.id}

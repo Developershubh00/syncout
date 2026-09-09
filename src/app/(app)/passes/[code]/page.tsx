@@ -86,12 +86,19 @@ export default async function PassPage({ params }: { params: Promise<{ code: str
                   approved ? "text-gold" : "text-text"
                 }`}
               >
-                {b.code}
+                {approved ? b.code : "· · · · · ·"}
               </p>
             </div>
           </div>
         </div>
       </div>
+
+      {!approved && (
+        <p className="px-4 pt-2 text-center text-[12.5px] text-muted">
+          Your code appears here once a host approves you. Nothing to show at the
+          door until then.
+        </p>
+      )}
 
       {/* ── status detail ── */}
       <section className="mt-5 px-4">
