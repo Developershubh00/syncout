@@ -56,7 +56,8 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
   const confirmed = o.status === "confirmed" || o.status === "checked_in";
   const payable = o.status === "awaiting_payment" || o.status === "payment_submitted";
   const look = ORDER_STATUS[o.status];
-  const doorQr = confirmed ? await qrSvg(absUrl(`/door?code=${o.code}`)) : null;
+  const live = !["rejected", "cancelled", "expired"].includes(o.status);
+  const doorQr = live ? await qrSvg(absUrl(`/door?code=${o.code}`)) : null;
   const admitted = Array.isArray(o.admitted) ? o.admitted : [];
   const startAt = (() => {
     const base = new Date(o.startsAt);
@@ -87,7 +88,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
             </div>
             <div className="min-w-0">
               <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${look.cls}`}>
-                <Icon className="size-3" /> {o.mode === "free" && o.status === "payment_submitted" ? "Waiting for confirmation" : look.label}
+                <Icon className="size-3" /> {o.mode !== "upi" && o.status === "payment_submitted" ? "Waiting for confirmation" : look.label}
               </span>
               <h1 className="mt-1.5 line-clamp-2 font-display text-[19px] font-extrabold leading-tight">{o.eventTitle}</h1>
               <p className="mt-1 flex items-center gap-1.5 text-[12.5px] text-muted"><MapPin className="size-3.5" /> {o.venueName} · {city}</p>
@@ -110,7 +111,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
               <p className={`mt-1 font-display text-[32px] font-extrabold leading-none tracking-[0.14em] ${confirmed ? "text-gold" : "text-text"}`}>{o.code}</p>
               {confirmed && <p className="mt-2 text-[11.5px] text-muted">Admits {o.admits}</p>}
             </div>
-            {doorQr && <TicketQr svg={doorQr} barcode={code128Svg(o.code)} caption={o.admits > 1 ? `Lets in all ${o.admits} at once — or send each friend their own pass below.` : "Brightness up, and show this with a photo ID. It opens offline once you've viewed it here."} />}
+            {doorQr && <TicketQr svg={doorQr} pending={!confirmed} barcode={code128Svg(o.code)} caption={o.admits > 1 ? `Lets in all ${o.admits} at once — or send each friend their own pass below.` : "Brightness up, and show this with a photo ID. It opens offline once you've viewed it here."} />}
             {o.discount > 0 && <p className="mt-3 text-[12.5px] font-semibold text-gold">Code {o.promoCode} saved you {rs(o.discount)}</p>}
           </div>
         </div>
@@ -126,11 +127,11 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
               details={`Booking ${o.code} · ${o.quantity} × ${o.tierName}`}
               icsHref={`/api/calendar/${o.code}${k ? `?k=${k}` : ""}`}
             />
-            <ShareButton path={`/events/${o.eventSlug}`} title={o.eventTitle} text={`I'm going to ${o.eventTitle} — come along!`} label="Invite friends" className="h-11 w-full justify-center rounded-xl" />
+            <ShareButton path={`/b/${o.eventSlug}`} title={o.eventTitle} text={`I'm going to ${o.eventTitle} — come along!`} label="Invite friends" className="h-11 w-full justify-center rounded-xl" />
           </div>
         )}
 
-        {payable && (
+        {payable && o.mode === "upi" && (
           <div className="mt-4">
             <PaymentPanel
               code={o.code}
@@ -148,7 +149,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
 
         {o.status === "rejected" && (
           <p className="mt-4 rounded-[18px] border border-red/30 bg-red/[0.06] p-4 text-[13px] leading-relaxed text-muted">
-            We couldn&apos;t confirm this booking. If you&apos;ve paid, message us on WhatsApp with the screenshot and code {o.code}.
+            We couldn&apos;t confirm this booking. Questions? Tap the guide at the bottom right, or reach us on the Contact page with code {o.code}.
           </p>
         )}
 

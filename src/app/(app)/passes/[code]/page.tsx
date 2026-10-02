@@ -62,7 +62,7 @@ export default async function PassPage({
   const look = LOOK[b.status];
   const cutoff = cutoffFor(new Date(b.startsAt), b.cutoffHour);
   const approved = b.status === "approved" || b.status === "checked_in";
-  const doorQr = approved ? await qrSvg(absUrl(`/door?code=${b.code}`)) : null;
+  const doorQr = approved || b.status === "pending" ? await qrSvg(absUrl(`/door?code=${b.code}`)) : null;
 
   return (
     <>
@@ -132,7 +132,7 @@ export default async function PassPage({
 
       {doorQr && (
         <div className="space-y-2.5 px-4">
-          <TicketQr svg={doorQr} barcode={code128Svg(b.code)} caption="Show this at the door with a photo ID for everyone in your group. Works offline once opened." />
+          <TicketQr svg={doorQr} pending={!approved} barcode={code128Svg(b.code)} caption={approved ? "Show this at the door with a photo ID for everyone in your group. Works offline once opened." : "Your entry QR — it switches on when you're approved (by 6 PM). We'll notify you."} />
           <AddToCalendar
             title={`${b.eventTitle} — ${b.clubName}`}
             start={new Date(b.startsAt)}

@@ -8,6 +8,8 @@ import { guestlistWindow } from "@/lib/guestlist";
 import { getUser } from "@/lib/session";
 import { accountForCheckout, emailBlocked } from "@/lib/auto-account";
 import { alertAdmins } from "@/lib/admin-alerts";
+import { qrSvg } from "@/lib/upi";
+import { absUrl } from "@/lib/site";
 import { sendMail, guestlistReceivedEmail } from "@/lib/mail";
 import { friendlyDate } from "@/lib/utils";
 import { passPath } from "@/lib/access";
@@ -179,5 +181,6 @@ export async function POST(req: Request) {
     })
   );
 
-  return NextResponse.json({ ok: true, code: saved.code, id: saved.id, url, account: acct.account }, { status: 201 });
+  const qr = await qrSvg(absUrl(`/door?code=${saved.code}`));
+  return NextResponse.json({ ok: true, code: saved.code, id: saved.id, url, account: acct.account, qr }, { status: 201 });
 }

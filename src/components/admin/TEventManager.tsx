@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Plus, Pencil, Trash2, X, ExternalLink } from "lucide-react";
+import { Plus, Pencil, Trash2, X, ExternalLink, Link2, Share2 } from "lucide-react";
 import { Sheet } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea, Select } from "@/components/ui/Field";
@@ -20,7 +20,7 @@ export type AdminEvent = {
   id: string; slug: string; title: string; category: string; citySlug: string; venueName: string; area: string | null;
   address: string | null; mapUrl: string | null; startsAt: string; endsAt: string | null; days: string[]; timeLabel: string | null;
   poster: string | null; description: string | null; highlights: string[]; organizer: string | null; ageLimit: string | null;
-  dressCode: string | null; terms: string | null; bookingMode: "upi" | "whatsapp" | "external" | "free"; externalUrl: string | null;
+  dressCode: string | null; terms: string | null; bookingMode: "request" | "upi" | "whatsapp" | "external" | "free"; externalUrl: string | null;
   sourceUrl: string | null; salesOpen: boolean; isFeatured: boolean; isActive: boolean; sortOrder: number;
   tiers: { id: string; name: string; description: string | null; price: number; admits: number; capacity: number | null; perOrderMax: number; isActive: boolean; compareAtPrice?: number | null; badge?: string | null; salesStartAt?: string | Date | null; salesEndAt?: string | Date | null }[];
   stats: { orders: number; confirmed: number; toVerify: number };
@@ -31,7 +31,7 @@ const blankTier = (): Tier => ({ name: "Entry pass", description: "", price: "49
 const BLANK = {
   title: "", slug: "", category: "dandiya", citySlug: "new-delhi", venueName: "", area: "", address: "", mapUrl: "",
   startsAt: istTonightInput(19), endsAt: "", days: [] as string[], timeLabel: "", poster: "", description: "",
-  highlights: "", organizer: "", ageLimit: "", dressCode: "", terms: "", bookingMode: "upi" as AdminEvent["bookingMode"],
+  highlights: "", organizer: "", ageLimit: "", dressCode: "", terms: "", bookingMode: "request" as AdminEvent["bookingMode"],
   externalUrl: "", sourceUrl: "", salesOpen: true, isFeatured: false, isActive: true, sortOrder: "0",
 };
 
@@ -176,6 +176,22 @@ export function TEventManager({ initial }: { initial: AdminEvent[] }) {
                 {e.stats.toVerify ? <b className="text-gold"> · {e.stats.toVerify} to verify</b> : null}
               </p>
             </div>
+            <button
+              onClick={() => navigator.clipboard.writeText(`${window.location.origin}/b/${e.slug}`).then(() => toast("Booking link copied — it opens straight into booking"))}
+              aria-label="Copy booking link"
+              title="Copy booking link"
+              className="rounded-lg p-2 text-gold active:bg-raised"
+            >
+              <Link2 className="size-4" />
+            </button>
+            <button
+              onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`${e.title} — book your tickets: ${window.location.origin}/b/${e.slug}`)}`, "_blank", "noopener")}
+              aria-label="Share on WhatsApp"
+              title="Share on WhatsApp"
+              className="rounded-lg p-2 text-[#25D366] active:bg-raised"
+            >
+              <Share2 className="size-4" />
+            </button>
             <a href={`/events/${e.slug}`} target="_blank" rel="noreferrer" aria-label="View" className="rounded-lg p-2 text-muted"><ExternalLink className="size-4" /></a>
             <button onClick={() => startEdit(e)} aria-label="Edit" className="rounded-lg p-2 text-muted active:bg-raised"><Pencil className="size-4" /></button>
             <button onClick={() => remove(e)} aria-label="Delete" className="rounded-lg p-2 text-red-hot active:bg-raised"><Trash2 className="size-4" /></button>
@@ -244,8 +260,8 @@ export function TEventManager({ initial }: { initial: AdminEvent[] }) {
 
           <div className="rounded-2xl border border-line bg-raised p-3.5">
             <Select label="How people book" value={f.bookingMode} onChange={set("bookingMode")}>
-              <option value="upi">UPI QR + WhatsApp proof (you confirm)</option>
-              <option value="whatsapp">Send booking on WhatsApp (you share payment there)</option>
+              <option value="request">Book in the app — you confirm in Admin (no payment step)</option>
+              <option value="upi">Pay by UPI in the app — you verify in Admin</option>
               <option value="external">Link to the organiser&apos;s ticket page</option>
               <option value="free">Free RSVP (you confirm)</option>
             </Select>

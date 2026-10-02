@@ -106,7 +106,7 @@ export default async function NightPage({ params }: { params: Promise<{ slug: st
       <div className="flex gap-2.5 px-4 pt-4">
         <Chip icon={<Clock className="size-3.5" />}>{fmtTime(night.startsAt)} onwards</Chip>
         {night.musicType && <Chip icon={<Music2 className="size-3.5" />}>{night.musicType}</Chip>}
-        <ShareButton path={`/nights/${night.slug}`} title={`${night.title} at ${night.clubName}`} text={`Guestlist for ${night.title} at ${night.clubName} — free entry if approved`} className="ml-auto" />
+        <ShareButton path={`/g/${night.slug}`} title={`${night.title} at ${night.clubName}`} text={`Guestlist for ${night.title} at ${night.clubName} — free entry if approved`} className="ml-auto" />
       </div>
 
       {night.description && (

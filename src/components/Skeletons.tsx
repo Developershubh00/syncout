@@ -1,7 +1,9 @@
+import { LogoLoader } from "@/components/brand/Logo";
 /** Shown instantly while the next page loads — so a tap always feels answered. */
 export function ListSkeleton() {
   return (
     <div className="pt-6" aria-busy="true" aria-label="Loading">
+      <LogoLoader />
       <div className="px-4 lg:px-0">
         <div className="sk h-4 w-40 rounded-full" />
         <div className="sk mt-4 h-9 w-64 rounded-xl" />
@@ -26,7 +28,8 @@ export function ListSkeleton() {
 
 export function DetailSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Loading" className="lg:grid lg:grid-cols-[1.15fr_1fr] lg:gap-10">
+    <div aria-busy="true" aria-label="Loading" className="relative lg:grid lg:grid-cols-[1.15fr_1fr] lg:gap-10">
+      <div className="absolute inset-x-0 top-[18%] z-10 lg:hidden"><LogoLoader /></div>
       <div className="sk aspect-[4/3] w-full lg:aspect-[16/11] lg:rounded-[26px]" />
       <div className="px-4 pt-5 lg:px-0 lg:pt-2">
         <div className="flex gap-2">

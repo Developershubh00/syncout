@@ -48,12 +48,15 @@ export function LogoMark({
   mood = "idle",
   eyeColor = "#fff",
   hello = false,
+  scan = false,
   className,
 }: {
   width?: number;
   mood?: Mood;
   eyeColor?: string;
   hello?: boolean;
+  /** Eyes look left and right on a loop — for loading states. */
+  scan?: boolean;
   className?: string;
 }) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, "");
@@ -99,8 +102,8 @@ export function LogoMark({
           <motion.g
             key="eyes"
             initial={waking ? { scale: 0 } : false}
-            animate={{ x: look, y: sad ? 2.5 : 0, scale: 1, scaleY: blink || waking ? [1, 0.15, 1] : sad ? 0.65 : 1 }}
-            transition={{ scale: { type: "spring", damping: 9, stiffness: 320 }, scaleY: { duration: 0.16 }, default: { type: "spring", damping: 16, stiffness: 220 } }}
+            animate={{ x: scan && !reduce ? [-3.2, 3.2, -3.2] : look, y: sad ? 2.5 : 0, scale: 1, scaleY: blink || waking ? [1, 0.15, 1] : sad ? 0.65 : 1 }}
+            transition={{ scale: { type: "spring", damping: 9, stiffness: 320 }, scaleY: { duration: 0.16 }, x: scan ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { type: "spring", damping: 16, stiffness: 220 }, default: { type: "spring", damping: 16, stiffness: 220 } }}
             style={{ originX: "50%", originY: "50%" }}
           >
             {EYES.map((e, i) => (
@@ -142,7 +145,7 @@ export function Logo({ size = "sm", hello = true, light = false, className }: { 
   useEffect(() => {
     if (!hello || reduce) return;
     const splash = !document.documentElement.classList.contains("no-splash") && document.querySelector(".splash");
-    const t = setTimeout(() => setWave(true), splash ? 2300 : 250);
+    const t = setTimeout(() => setWave(true), splash ? 4800 : 250);
     return () => clearTimeout(t);
   }, [hello, reduce]);
 
@@ -169,5 +172,20 @@ export function Logo({ size = "sm", hello = true, light = false, className }: { 
         ))}
       </span>
     </span>
+  );
+}
+
+/** Loading state: the eyes look around while the next screen arrives. */
+export function LogoLoader({ label = "Loading" }: { label?: string }) {
+  return (
+    <div role="status" aria-label={label} className="flex flex-col items-center gap-2 py-5">
+      <LogoMark width={72} scan />
+      <span className="flex items-center gap-0.5 text-[12px] font-semibold text-muted">
+        {label}
+        <span className="loader-dot">.</span>
+        <span className="loader-dot">.</span>
+        <span className="loader-dot">.</span>
+      </span>
+    </div>
   );
 }

@@ -163,7 +163,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             <Chip icon={<CalendarDays className="size-3.5" />}>{datesLabel(ev)}</Chip>
             <Chip icon={<Clock className="size-3.5" />}>{timeLabel(ev)}</Chip>
             {from !== null && <Chip gold>{from ? `from ${rs(from)}` : "Free"}</Chip>}
-            <ShareButton path={`/events/${ev.slug}`} title={ev.title} text={`${ev.title} at ${ev.venueName}, ${datesLabel(ev)} — let's go!`} className="ml-auto" />
+            <ShareButton path={`/b/${ev.slug}`} title={ev.title} text={`${ev.title} at ${ev.venueName}, ${datesLabel(ev)} — let's go!`} className="ml-auto" />
           </div>
 
           {earlyBird?.salesEndAt && (
@@ -205,6 +205,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           <TicketFlow
             event={{
               id: ev.id,
+              slug: ev.slug,
               title: ev.title,
               venueName: ev.venueName,
               days,

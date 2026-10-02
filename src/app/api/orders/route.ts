@@ -10,7 +10,8 @@ import { getSettings } from "@/lib/settings";
 import { quotePromo, claimPromo, releasePromo } from "@/lib/promos";
 import { accountForCheckout, emailBlocked } from "@/lib/auto-account";
 import { alertAdmins } from "@/lib/admin-alerts";
-import { waLink, bookingEnquiryMessage } from "@/lib/whatsapp";
+import { qrSvg } from "@/lib/upi";
+import { absUrl } from "@/lib/site";
 import { eventDays } from "@/lib/tevents";
 import { dayLabel, rs } from "@/lib/event-format";
 import { looksLikeVpa } from "@/lib/upi";
@@ -75,10 +76,11 @@ export async function POST(req: Request) {
     promo = { id: q.id, code: q.code };
   }
   const amount = subtotal - discount;
-  let mode: BookingMode = ev.bookingMode;
+  // Bookings land in Admin → Event bookings. Only a configured UPI flow asks for payment first.
+  let mode: BookingMode = ev.bookingMode === "whatsapp" ? "request" : ev.bookingMode;
   if (amount === 0) mode = "free";
-  else if (mode === "upi" && !looksLikeVpa(settings.upiVpa) && !settings.upiQrImage) mode = "whatsapp";
-  const status = mode === "free" ? "payment_submitted" : "awaiting_payment";
+  else if (mode === "upi" && !looksLikeVpa(settings.upiVpa) && !settings.upiQrImage) mode = "request";
+  const status = mode === "upi" ? "awaiting_payment" : "payment_submitted";
 
   // Tickets per day are checked inside the insert, counting paid tickets and
   // unpaid ones still inside their hold window.
@@ -142,7 +144,7 @@ export async function POST(req: Request) {
   if (acct.userId) {
     await notifyUsers([acct.userId], {
       kind: "receipt",
-      title: mode === "free" ? "Booking requested" : "Booking requested — complete payment",
+      title: mode === "upi" ? "Booking saved — complete payment" : "Booking received — your QR is ready",
       body: `${ev.title} · ${dayLabel(day)} · ${tickets}`,
       url,
       popup: false,
@@ -162,14 +164,11 @@ export async function POST(req: Request) {
         tickets,
         amount: rs(amount),
         url,
-        free: mode === "free",
+        free: mode !== "upi",
       }),
     })
   );
 
-  const whatsappUrl =
-    mode === "whatsapp"
-      ? waLink(settings.whatsapp, bookingEnquiryMessage({ code: saved.code, eventTitle: ev.title, venue: ev.venueName, dayLabel: dayLabel(day), tierName: tier.name, quantity: d.quantity, amount, name: d.name, phone: d.phone }))
-      : null;
-  return NextResponse.json({ ok: true, code: saved.code, url, mode, account: acct.account, whatsappUrl }, { status: 201 });
+  const qr = await qrSvg(absUrl(`/door?code=${saved.code}`));
+  return NextResponse.json({ ok: true, code: saved.code, url, mode, account: acct.account, qr }, { status: 201 });
 }

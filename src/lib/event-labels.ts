@@ -23,4 +23,4 @@ export const ORDER_STATUS: Record<OrderStatus, { label: string; cls: string }> =
   refunded: { label: "Refunded", cls: "bg-raised text-faint" },
 };
 
-export const MODE_LABEL = { upi: "UPI + WhatsApp", whatsapp: "Book on WhatsApp", external: "Organiser link", free: "Free RSVP" } as const;
+export const MODE_LABEL = { request: "In-app booking", upi: "UPI in app", whatsapp: "In-app booking", external: "Organiser link", free: "Free RSVP" } as const;

@@ -228,7 +228,8 @@ export const favorites = pgTable(
    so later patches can add a value without an ALTER TYPE migration.
    ════════════════════════════════════════════════════════════════ */
 
-export type BookingMode = "upi" | "whatsapp" | "external" | "free";
+/** request = book in the app, the team confirms in Admin (no payment step). whatsapp is legacy → treated as request. */
+export type BookingMode = "request" | "upi" | "whatsapp" | "external" | "free";
 export type OrderStatus =
   | "awaiting_payment"
   | "payment_submitted"

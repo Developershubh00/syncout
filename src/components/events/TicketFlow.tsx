@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, ExternalLink, Lock, Minus, Plus, Ticket, MessageCircle, BellRing, TicketPercent } from "lucide-react";
+import { ArrowRight, ExternalLink, Lock, Minus, Plus, Ticket, MessageCircle, BellRing, TicketPercent, BadgeCheck } from "lucide-react";
 import { Countdown } from "@/components/events/Countdown";
 import { readSavedPromo } from "@/components/PromoCapture";
 import { Sheet, SheetFooter } from "@/components/ui/Sheet";
@@ -32,10 +32,11 @@ export type FlowTier = {
 
 export type FlowEvent = {
   id: string;
+  slug: string;
   title: string;
   venueName: string;
   days: string[];
-  bookingMode: "upi" | "whatsapp" | "external" | "free";
+  bookingMode: "request" | "upi" | "whatsapp" | "external" | "free";
   externalUrl: string | null;
   open: boolean;
   closedReason: string;
@@ -52,7 +53,7 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [done, setDone] = useState<{ code: string; url: string; mode: string; account: string | null; whatsappUrl: string | null } | null>(null);
+  const [done, setDone] = useState<{ code: string; url: string; mode: string; account: string | null; qr: string | null } | null>(null);
   const [form, setForm] = useState({ name: user?.name ?? "", phone: "", email: user?.email ?? "", note: "" });
   const [promoInput, setPromoInput] = useState("");
   const [promo, setPromo] = useState<{ code: string; label: string; discount: number; key: string } | null>(null);
@@ -64,6 +65,15 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
   useEffect(() => {
     const saved = readSavedPromo();
     if (saved) setPromoInput(saved);
+  }, []);
+
+  // Shared links (/b/slug → ?book=1) open the booking sheet straight away — after the welcome animation if it's playing.
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has("book") || !event.open || !tiers.length || event.bookingMode === "external") return;
+    const splash = document.querySelector(".splash") && !document.documentElement.classList.contains("no-splash");
+    const t = setTimeout(() => setOpen(true), splash ? 4900 : 450);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const tier = tiers.find((t) => t.id === tierId) ?? null;
@@ -136,7 +146,7 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
       setBusy(false);
     }
   }
-  const mode = total === 0 ? "free" : event.bookingMode === "upi" && !event.upiReady ? "whatsapp" : event.bookingMode;
+  const mode = total === 0 ? "free" : (event.bookingMode === "upi" && !event.upiReady) || event.bookingMode === "whatsapp" ? "request" : event.bookingMode;
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -173,7 +183,7 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
       if (!res.ok) throw new Error(data.error ?? "Something went wrong");
       track("order_created", { value: total, label: event.title });
       setOpen(false);
-      setDone({ code: data.code, url: data.url, mode: data.mode, account: data.account ?? null, whatsappUrl: data.whatsappUrl ?? null });
+      setDone({ code: data.code, url: data.url, mode: data.mode, account: data.account ?? null, qr: data.qr ?? null });
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn't book — try again", "err");
     } finally {
@@ -380,9 +390,9 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
                 {promoErr && <p className="mt-1.5 text-[12px] text-red-hot">{promoErr}</p>}
               </div>
               <div className="mt-4 rounded-2xl border border-line bg-surface p-4 text-[12.5px] leading-relaxed text-muted">
-                {mode === "upi" && <p>Next you&apos;ll see a UPI QR for {rs(total)}. Pay from any UPI app, then send us the screenshot on WhatsApp — we confirm your tickets right after.</p>}
-                {mode === "whatsapp" && (
-                  <p className="flex gap-2"><MessageCircle className="mt-0.5 size-4 shrink-0 text-[#25D366]" /> Next, send your booking to us on WhatsApp and we&apos;ll share payment details and confirm your tickets there.</p>
+                {mode === "upi" && <p>Next you&apos;ll see a UPI QR for {rs(total)}. Pay from any UPI app and add the UPI reference — we confirm your tickets right after.</p>}
+                {mode === "request" && (
+                  <p className="flex gap-2"><BadgeCheck className="mt-0.5 size-4 shrink-0 text-gold" /> No payment step now — your booking goes straight to the SyncOut team and your entry QR is ready instantly. You&apos;ll get a notification the moment it&apos;s confirmed.</p>
                 )}
                 {mode === "free" && <p>This one&apos;s free — we&apos;ll confirm your spot shortly.</p>}
                 <p className="mt-2 text-[11.5px] text-faint">
@@ -432,17 +442,16 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
 
       <ThankYouSplash
         open={Boolean(done)}
-        title={done?.mode === "free" ? "You're booked" : "Booking requested"}
+        title={done?.mode === "upi" ? "Booking saved" : done?.mode === "free" ? "You're booked" : "Booking received"}
         body={
           done?.mode === "upi"
-            ? "Next: pay by UPI on your ticket page."
-            : done?.mode === "whatsapp"
-              ? "Last step: send it to us on WhatsApp — we confirm and share payment details there."
-              : "We'll confirm your spot shortly."
+            ? "Next: pay by UPI on your ticket page. This QR is your entry pass."
+            : "Your entry QR is ready. We're confirming your booking now — you'll get a notification the moment it's done."
         }
         code={done?.code}
+        qr={done?.qr ?? undefined}
         festive
-        autoMs={done?.mode === "whatsapp" ? 0 : 2600}
+        autoMs={0}
         note={
           done?.account === "created"
             ? "Saved to your new SyncOut account — you're logged in, so your ticket and its status are always in Passes."
@@ -451,24 +460,24 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
               : undefined
         }
         actions={
-          done?.mode === "whatsapp" && done.whatsappUrl ? (
+          done ? (
             <>
-              <a
-                href={done.whatsappUrl}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => {
-                  const k = new URL(done.url, window.location.origin).searchParams.get("k");
-                  fetch(`/api/orders/${done.code}/paid`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ k, enquiry: true }), keepalive: true }).catch(() => {});
-                  track("whatsapp_click", { value: total, label: event.title });
-                  setTimeout(() => router.push(done.url), 600);
+              <button onClick={() => router.push(done.url)} className="flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-white text-[15px] font-semibold text-[#111]">
+                <Ticket className="size-5" /> {done.mode === "upi" ? "Pay & view ticket" : "View my ticket"}
+              </button>
+              <button
+                onClick={async () => {
+                  const url = `${window.location.origin}/b/${event.slug}`;
+                  try {
+                    if (navigator.share) return await navigator.share({ title: event.title, text: `I'm going to ${event.title} — book yours:`, url });
+                  } catch {
+                    return;
+                  }
+                  window.open(`https://wa.me/?text=${encodeURIComponent(`I'm going to ${event.title} — book yours: ${url}`)}`, "_blank", "noopener");
                 }}
-                className="flex h-13 items-center justify-center gap-2 rounded-2xl bg-[#25D366] py-3.5 text-[15px] font-semibold text-white"
+                className="h-12 rounded-2xl border border-white/15 text-[14px] font-semibold text-white/85"
               >
-                <MessageCircle className="size-5" /> Send on WhatsApp
-              </a>
-              <button onClick={() => router.push(done.url)} className="h-12 rounded-2xl border border-white/15 text-[14px] font-semibold text-white/85">
-                View my ticket
+                Invite friends
               </button>
             </>
           ) : undefined

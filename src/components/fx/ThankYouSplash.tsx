@@ -20,6 +20,7 @@ export function ThankYouSplash({
   onDone,
   actions,
   note,
+  qr,
 }: {
   open: boolean;
   title: string;
@@ -31,6 +32,8 @@ export function ThankYouSplash({
   onDone?: () => void;
   actions?: React.ReactNode;
   note?: string;
+  /** An SVG QR (the entry pass) — shown instead of the text code. */
+  qr?: string;
 }) {
   const reduce = useReducedMotion();
   const bits = useMemo(
@@ -161,15 +164,29 @@ export function ThankYouSplash({
                 {body}
               </motion.p>
             )}
-            {code && (
-              <motion.p
-                className="mt-5 inline-block rounded-xl border border-gold/40 bg-gold/[0.08] px-4 py-2 font-display text-[22px] font-extrabold tracking-[0.18em] text-gold"
-                initial={{ opacity: 0, scale: 0.85 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.55, type: "spring", damping: 18, stiffness: 300 }}
+            {qr ? (
+              <motion.div
+                initial={{ scale: 0.6, opacity: 0, rotate: -8 }}
+                animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                transition={{ type: "spring", damping: 14, stiffness: 190, delay: 0.5 }}
+                className="mx-auto mt-5 w-[196px] rounded-[24px] bg-white p-3 shadow-[0_24px_60px_-24px_rgba(242,193,78,.85)]"
               >
-                {code}
-              </motion.p>
+                <div className="[&>svg]:h-auto [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: qr }} />
+                {code && <p className="mt-1 font-display text-[16px] font-extrabold tracking-[0.2em] text-[#140c03]">{code}</p>}
+              </motion.div>
+            ) : (
+              <>
+            {code && (
+                <motion.p
+                  className="mt-5 inline-block rounded-xl border border-gold/40 bg-gold/[0.08] px-4 py-2 font-display text-[22px] font-extrabold tracking-[0.18em] text-gold"
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.55, type: "spring", damping: 18, stiffness: 300 }}
+                >
+                  {code}
+                </motion.p>
+              )}
+              </>
             )}
             <div className="mx-auto mt-7 h-1 w-40 overflow-hidden rounded-full bg-line">
               {autoMs > 0 && (

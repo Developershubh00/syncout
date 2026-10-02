@@ -14,7 +14,7 @@ export function Splash() {
     try {
       sessionStorage.setItem("so_splash", "1");
     } catch {}
-    const t = setTimeout(() => setGone(true), 2500);
+    const t = setTimeout(() => setGone(true), 4900);
     return () => clearTimeout(t);
   }, []);
   if (gone) return null;

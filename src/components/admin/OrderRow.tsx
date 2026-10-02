@@ -39,7 +39,7 @@ export function OrderRow({ o }: { o: O }) {
   }
 
   const when = o.day ? dayLabel(o.day) : "";
-  const look = ORDER_STATUS[o.status];
+  const look = o.status === "payment_submitted" && o.mode !== "upi" ? { ...ORDER_STATUS[o.status], label: "New booking" } : ORDER_STATUS[o.status];
   const waText = `Hi ${o.name.split(" ")[0]}, this is SyncOut about your booking ${o.code} for ${o.eventTitle}${when ? ` (${when})` : ""}.`;
 
   return (

@@ -133,7 +133,7 @@ export const ticketedEventSchema = z.object({
   ageLimit: z.string().max(40).optional().nullable(),
   dressCode: z.string().max(200).optional().nullable(),
   terms: z.string().max(4000).optional().nullable(),
-  bookingMode: z.enum(["upi", "whatsapp", "external", "free"]).default("upi"),
+  bookingMode: z.enum(["request", "upi", "whatsapp", "external", "free"]).default("request"),
   externalUrl: optUrl,
   sourceUrl: optUrl,
   salesOpen: z.boolean().default(true),

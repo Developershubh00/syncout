@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Minus, Plus, ArrowRight, Lock, Users, User, Heart } from "lucide-react";
@@ -52,7 +52,15 @@ export function BookingFlow({
   const [guys, setGuys] = useState(0);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [done, setDone] = useState<{ code: string; url: string; account: string | null } | null>(null);
+  const [done, setDone] = useState<{ code: string; url: string; account: string | null; qr: string | null } | null>(null);
+
+  // Shared links (/g/slug → ?book=1) open the guestlist sheet straight away.
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has("book")) return;
+    const splash = document.querySelector(".splash") && !document.documentElement.classList.contains("no-splash");
+    const t = setTimeout(() => setOpen(true), splash ? 4900 : 450);
+    return () => clearTimeout(t);
+  }, []);
 
   const [form, setForm] = useState({
     guestName: user?.name ?? "",
@@ -119,7 +127,7 @@ export function BookingFlow({
       if (!res.ok) throw new Error(data.error ?? "Something went wrong");
       track("booking_requested", { label: night.title });
       setOpen(false);
-      setDone({ code: data.code, url: data.url ?? `/passes/${data.code}`, account: data.account ?? null });
+      setDone({ code: data.code, url: data.url ?? `/passes/${data.code}`, account: data.account ?? null, qr: data.qr ?? null });
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn't submit — try again", "err");
     } finally {
@@ -361,6 +369,7 @@ export function BookingFlow({
         title="Application sent"
         body="We confirm every list by 6 PM — you'll get a notification and an email either way."
         code={done?.code}
+        qr={done?.qr ?? undefined}
         note={
           done?.account === "created"
             ? "Saved to your new SyncOut account — you're logged in, so your pass and its status are always in Passes."
