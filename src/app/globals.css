@@ -357,3 +357,11 @@ body { overscroll-behavior-x: none; }
 
 /* the guide orb hides while it's starring in the intro */
 body[data-intro] .wa-fab { opacity: 0; transform: scale(0.6); pointer-events: none; }
+
+/* a soft ring that breathes around the main Book button */
+.party-cta { position: relative; isolation: isolate; }
+.party-cta::after { content: ""; position: absolute; inset: -3px; border-radius: inherit; border: 2px solid rgba(255, 43, 214, 0.55); pointer-events: none; animation: cta-ping 2.8s cubic-bezier(0.2, 0.6, 0.3, 1) infinite; }
+@keyframes cta-ping { 0% { opacity: 0.85; transform: scale(0.97); } 70%, 100% { opacity: 0; transform: scale(1.1); } }
+@media (prefers-reduced-motion: reduce) { .party-cta::after { animation: none; opacity: 0; } }
+/* skip rendering far-below content until it's near the screen */
+.cv-auto { content-visibility: auto; contain-intrinsic-size: auto 520px; }

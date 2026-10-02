@@ -292,7 +292,7 @@ function HomeSkeleton() {
 
 function Footer() {
   return (
-    <footer className="mt-14 border-t border-line px-4 py-8 text-[12.5px] text-faint lg:hidden">
+    <footer className="cv-auto mt-14 border-t border-line px-4 py-8 text-[12.5px] text-faint lg:hidden">
       <Logo size="xs" hello={false} />
       <p className="mt-2 max-w-[42ch] leading-relaxed">
         Guestlists and Dandiya events for Delhi NCR. 21+ with a government photo ID for clubs. Entry stays at the venue&apos;s

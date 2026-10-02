@@ -90,6 +90,10 @@ export const clubs = pgTable(
     sortOrder: integer("sort_order").default(0).notNull(),
     /** SyncOut House — our own clubs: premium crowd, food and drinks, our team on the door. */
     inHouse: boolean("in_house").default(false).notNull(),
+    /** The club's own Instagram handle (no @). */
+    instagram: text("instagram"),
+    /** Links to posts/reels on the club's Instagram, shown with Instagram's official embed. */
+    instagramPosts: jsonb("instagram_posts").$type<string[]>().default([]).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({ cityIdx: index("clubs_city_idx").on(t.citySlug) })

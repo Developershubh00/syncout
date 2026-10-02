@@ -52,6 +52,7 @@ export const GALLERIA_CLUBS: SeedClub[] = [
     reviewCount: 0,
     isFeatured: true,
     inHouse: true,
+    instagram: "levernasia_la",
   },
   {
     name: "Millionaire The Lux Club",
@@ -72,6 +73,7 @@ export const GALLERIA_CLUBS: SeedClub[] = [
     reviewCount: 0,
     isFeatured: true,
     inHouse: true,
+    instagram: "millionairetheluxclub",
   },
   ...(
     [

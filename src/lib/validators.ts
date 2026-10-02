@@ -56,6 +56,14 @@ export const clubSchema = z.object({
   dressCode: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
   mapUrl: z.string().optional().nullable(),
+  instagram: z
+    .string()
+    .trim()
+    .max(120)
+    .transform((v) => v.replace(/^https?:\/\/(www\.)?instagram\.com\//i, "").replace(/^@/, "").replace(/[/?#].*$/, ""))
+    .optional()
+    .nullable(),
+  instagramPosts: z.array(z.string().trim().regex(/^https:\/\/(www\.)?instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/i, "Use links to Instagram posts or reels")).max(12).default([]),
   isFeatured: z.boolean().default(false),
   isActive: z.boolean().default(true),
 });

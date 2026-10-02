@@ -33,7 +33,7 @@ export default async function PrivacyPage() {
       </Section>
       <Section title="Who we share it with">
         <p><b>Venues and organisers</b> of the night you book — your name, group size, booking code and, if the door needs to reach you, your mobile number.</p>
-        <p><b>Service providers</b> that run SyncOut for us — hosting (Vercel), database (Neon), email (Resend) and analytics/advertising providers — only to provide their service.</p>
+        <p><b>Service providers</b> that run SyncOut for us — hosting (Vercel), database (Neon), email (Resend) and analytics/advertising providers — only to provide their service. Some club pages show posts embedded from Instagram; those load from Instagram, which may set its own cookies.</p>
         <p><b>Authorities</b> when the law requires it. We never sell your personal data.</p>
       </Section>
       <Section title="How long we keep it">

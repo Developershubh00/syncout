@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import type { InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes } from "react";
 
 const base =
-  "w-full bg-raised border border-line rounded-2xl px-4 text-[15px] text-text " +
+  "w-full bg-raised border border-line rounded-[18px] px-4 text-[16px] text-text " +
   "placeholder:text-faint transition-colors focus:border-red/60 focus:bg-surface";
 
 export function Label({ children, hint }: { children: React.ReactNode; hint?: string }) {

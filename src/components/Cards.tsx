@@ -19,7 +19,7 @@ export function ClubCard({
 }) {
   return (
     <Link href={`/clubs/${club.slug}`} className={cn("group block", width)}>
-      <div className="relative aspect-[3/4] overflow-hidden rounded-[18px] bg-raised ring-0 ring-red/0 transition-all duration-300 lg:group-hover:ring-2 lg:group-hover:ring-red/60">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-[24px] bg-raised ring-0 ring-red/0 transition-all duration-300 lg:group-hover:ring-2 lg:group-hover:ring-red/60">
         <Image
           src={club.coverImage || FALLBACK}
           alt=""
@@ -69,7 +69,7 @@ export function NightCard({
   const d = new Date(ev.startsAt);
   return (
     <Link href={`/nights/${ev.slug}`} className={cn("group block", wide ? "w-full" : "w-[270px]")}>
-      <div className="relative aspect-[16/10] overflow-hidden rounded-[18px] bg-raised ring-0 ring-red/0 transition-all duration-300 lg:group-hover:ring-2 lg:group-hover:ring-red/60">
+      <div className="relative aspect-[16/10] overflow-hidden rounded-[24px] bg-raised ring-0 ring-red/0 transition-all duration-300 lg:group-hover:ring-2 lg:group-hover:ring-red/60">
         <Image
           src={ev.poster || FALLBACK}
           alt=""
@@ -105,7 +105,7 @@ export function OfferCard({
   offer: { title: string; subtitle: string | null; description: string | null; image: string | null };
 }) {
   return (
-    <article className="relative w-[276px] overflow-hidden rounded-[18px] border border-line bg-surface p-4">
+    <article className="relative w-[276px] overflow-hidden rounded-[24px] border border-line bg-surface p-4">
       <div className="absolute -right-6 -top-8 size-28 rounded-full bg-red/12 blur-2xl" />
       <p className="text-[11.5px] font-semibold text-gold">{offer.subtitle}</p>
       <h3 className="mt-1.5 text-[17px] leading-tight">{offer.title}</h3>

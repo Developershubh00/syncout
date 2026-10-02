@@ -26,6 +26,7 @@ export type SeedClub = {
   reviewCount: number;
   isFeatured?: boolean;
   inHouse?: boolean;
+  instagram?: string;
 };
 
 export const CITIES = [

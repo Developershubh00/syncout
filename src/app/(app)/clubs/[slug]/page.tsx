@@ -1,5 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ClubGallery } from "@/components/ClubGallery";
+import { InstagramPosts } from "@/components/InstagramPosts";
 import { notFound } from "next/navigation";
 import { Crown, ChevronLeft, MapPin, Clock, Star, Shirt, Phone, IndianRupee } from "lucide-react";
 import { getNights, getClubReviews } from "@/lib/queries";
@@ -127,6 +129,9 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
               </span>
             ))}
           </div>
+
+      <ClubGallery photos={(club.gallery ?? []).filter((u) => u && !u.endsWith(".svg"))} name={club.name} />
+      <InstagramPosts handle={club.instagram ?? null} posts={club.instagramPosts ?? []} />
         </div>
       )}
 

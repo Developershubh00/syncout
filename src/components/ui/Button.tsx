@@ -19,9 +19,9 @@ const variants = {
 };
 
 const sizes = {
-  sm: "h-9 px-3.5 text-[13px] rounded-xl",
-  md: "h-11 px-4 text-sm rounded-2xl",
-  lg: "h-14 px-6 text-[15px] rounded-2xl",
+  sm: "h-9 px-4 text-[13px] rounded-full",
+  md: "h-11 px-5 text-sm rounded-full",
+  lg: "h-14 px-6 text-[15px] rounded-[22px]",
 };
 
 export function Button({

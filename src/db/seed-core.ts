@@ -49,6 +49,7 @@ export async function seedCitiesAndClubs() {
         reviewCount: c.reviewCount,
         isFeatured: c.isFeatured ?? false,
         inHouse: c.inHouse ?? false,
+        instagram: c.instagram ?? null,
         sortOrder: i,
       }))
     )

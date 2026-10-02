@@ -7,6 +7,7 @@ import { Sheet } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea, Select } from "@/components/ui/Field";
 import { ImagePicker } from "@/components/admin/ImagePicker";
+import { GalleryPicker } from "@/components/admin/GalleryPicker";
 import { useToast } from "@/components/ui/Toast";
 import { slugify } from "@/lib/utils";
 import type { Club } from "@/db/schema";
@@ -15,7 +16,7 @@ const BLANK = {
   name: "", slug: "", citySlug: "new-delhi", area: "", address: "", tagline: "",
   description: "", coverImage: "", musicTypes: "", tags: "", priceForTwo: "",
   openTime: "8:00 PM", closeTime: "1:00 AM",
-  dressCode: "Smart casuals. No shorts, no slippers.", phone: "", mapUrl: "",
+  dressCode: "Smart casuals. No shorts, no slippers.", phone: "", mapUrl: "", gallery: [] as string[], instagram: "", instagramPosts: "",
   isFeatured: false, isActive: true,
 };
 
@@ -42,6 +43,7 @@ export function ClubManager({ initial }: { initial: Club[] }) {
       priceForTwo: c.priceForTwo ? String(c.priceForTwo) : "",
       openTime: c.openTime ?? "", closeTime: c.closeTime ?? "",
       dressCode: c.dressCode ?? "", phone: c.phone ?? "", mapUrl: c.mapUrl ?? "",
+      gallery: c.gallery?.length ? c.gallery : c.coverImage ? [c.coverImage] : [], instagram: c.instagram ?? "", instagramPosts: (c.instagramPosts ?? []).join("\n"),
       isFeatured: c.isFeatured, isActive: c.isActive,
     });
     setOpen(true);
@@ -56,7 +58,11 @@ export function ClubManager({ initial }: { initial: Club[] }) {
         priceForTwo: f.priceForTwo ? Number(f.priceForTwo) : null,
         musicTypes: f.musicTypes.split(",").map((s) => s.trim()).filter(Boolean),
         tags: f.tags.split(",").map((s) => s.trim()).filter(Boolean),
-        gallery: f.coverImage ? [f.coverImage] : [],
+        // the first photo is the cover
+        coverImage: f.gallery[0] ?? (f.coverImage || null),
+        gallery: f.gallery.length ? f.gallery : f.coverImage ? [f.coverImage] : [],
+        instagram: f.instagram.trim() || null,
+        instagramPosts: f.instagramPosts.split(/\s+/).map((x) => x.trim()).filter(Boolean),
       };
       const res = await fetch(editing ? `/api/admin/clubs/${editing.id}` : "/api/admin/clubs", {
         method: editing ? "PATCH" : "POST",
@@ -144,6 +150,21 @@ export function ClubManager({ initial }: { initial: Club[] }) {
           </div>
           <Input label="Dress code" value={f.dressCode} onChange={set("dressCode")} />
           <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-full space-y-3 rounded-2xl border border-line p-3">
+              <GalleryPicker value={f.gallery} onChange={(g) => setF((x) => ({ ...x, gallery: g, coverImage: g[0] ?? x.coverImage }))} />
+              <Input label="Instagram handle" placeholder="@clubname" value={f.instagram} onChange={set("instagram")} />
+              <label className="block">
+                <span className="text-[12.5px] font-medium text-muted">Instagram posts to show (one link per line)</span>
+                <textarea
+                  value={f.instagramPosts}
+                  onChange={(e) => setF((x) => ({ ...x, instagramPosts: e.target.value }))}
+                  rows={3}
+                  placeholder={"https://www.instagram.com/p/…\nhttps://www.instagram.com/reel/…"}
+                  className="mt-1.5 w-full rounded-2xl border border-line bg-raised px-4 py-3 text-[13px]"
+                />
+                <span className="mt-1 block text-[11.5px] text-faint">On a post in the Instagram app: ••• → Copy link. They show on the club page through Instagram&apos;s official embed.</span>
+              </label>
+            </div>
             <Input label="Phone" value={f.phone} onChange={set("phone")} />
             <Input label="Maps link" value={f.mapUrl} onChange={set("mapUrl")} />
           </div>

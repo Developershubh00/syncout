@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Search, MapPin, User, Sparkles, Disc3, CalendarDays, PartyPopper, Music2, ChevronDown } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { NotificationBell } from "@/components/notify/NotificationBell";
@@ -18,7 +20,40 @@ const CATS = [
 export function AppHeader({ city, name, initials }: { city: string; name?: string | null; initials?: string }) {
   const router = useRouter();
   const first = name?.split(" ")[0];
+  const [mini, setMini] = useState(false);
+  useEffect(() => {
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => setMini(window.scrollY > 260));
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
   return (
+    <>
+    <AnimatePresence>
+      {mini && (
+        <motion.div
+          className="fixed inset-x-0 top-0 z-40 border-b border-white/[0.06] bg-ink/85 px-4 pb-2.5 pt-[calc(env(safe-area-inset-top,0px)+8px)] backdrop-blur-xl lg:hidden"
+          initial={{ y: "-100%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "-100%", transition: { duration: 0.22, ease: "easeIn" } }}
+          transition={{ type: "spring", damping: 28, stiffness: 320 }}
+        >
+          <div className="flex items-center gap-3">
+            <Link href="/" aria-label="SyncOut home"><Logo size="xs" hello={false} /></Link>
+            <Link href="/search" aria-label="Search" className="ml-auto grid size-9 place-items-center rounded-full bg-white/[0.07]"><Search className="size-[17px]" /></Link>
+            <Link href="/profile" aria-label="Your profile" className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-[#ff2bd6] to-[#e4113c] text-[12.5px] font-bold text-white">
+              {initials || <User className="size-4" />}
+            </Link>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
     <header className="app-header-in relative overflow-hidden rounded-b-[30px] border-b border-white/[0.06] bg-gradient-to-b from-[#1c0b1f] via-[#140b17] to-ink px-4 pb-5 pt-[calc(env(safe-area-inset-top,0px)+12px)] lg:hidden">
       <div aria-hidden className="pointer-events-none absolute -right-20 -top-24 size-64 rounded-full bg-[#ff2bd6]/20 blur-3xl" />
       <div aria-hidden className="pointer-events-none absolute -left-24 top-16 size-56 rounded-full bg-[#f2c14e]/10 blur-3xl" />
@@ -74,5 +109,6 @@ export function AppHeader({ city, name, initials }: { city: string; name?: strin
         ))}
       </nav>
     </header>
+    </>
   );
 }

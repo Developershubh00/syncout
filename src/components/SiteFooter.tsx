@@ -45,7 +45,7 @@ const cols = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-20 hidden border-t border-line lg:block">
+    <footer className="cv-auto mt-20 hidden border-t border-line lg:block">
       <div className="mx-auto grid max-w-[1280px] grid-cols-[1.4fr_repeat(4,1fr)] gap-10 px-6 py-14">
         <div>
           <Logo size="md" hello={false} />

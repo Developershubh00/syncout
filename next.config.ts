@@ -2,13 +2,16 @@ import type { NextConfig } from "next";
 
 const config: NextConfig = {
   images: {
+    // AVIF first — usually 20–30% smaller than WebP on phones; optimised images are kept a month.
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
       { protocol: "https", hostname: "**.public.blob.vercel-storage.com" },
       { protocol: "https", hostname: "sync.quickrpe.com" },
       { protocol: "https", hostname: "images.unsplash.com" },
     ],
   },
-  experimental: { optimizePackageImports: ["lucide-react"] },
+  experimental: { optimizePackageImports: ["lucide-react", "framer-motion"] },
   async headers() {
     return [
       {
@@ -20,6 +23,8 @@ const config: NextConfig = {
         ],
       },
       { source: "/manifest.json", headers: [{ key: "Cache-Control", value: "public, max-age=3600" }] },
+      { source: "/clubs/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }] },
+      { source: "/icons/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }] },
       {
         source: "/events/:file*.svg",
         headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }],

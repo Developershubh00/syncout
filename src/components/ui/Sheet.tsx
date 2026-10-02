@@ -46,7 +46,7 @@ export function Sheet({
               role="dialog"
               aria-modal="true"
               aria-label={title}
-              className="absolute inset-x-0 bottom-0 mx-auto max-h-[90vh] max-w-[560px] overflow-y-auto overscroll-contain rounded-t-[26px] border-t border-line bg-surface supports-[height:100dvh]:max-h-[90dvh] lg:bottom-6 lg:rounded-[26px] lg:border"
+              className="absolute inset-x-0 bottom-0 mx-auto max-h-[90vh] max-w-[560px] overflow-y-auto overscroll-contain rounded-t-[32px] border-t border-line bg-surface supports-[height:100dvh]:max-h-[90dvh] lg:bottom-6 lg:rounded-[32px] lg:border"
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
