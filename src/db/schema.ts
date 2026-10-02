@@ -53,6 +53,8 @@ export const users = pgTable(
     idProofUrl: text("id_proof_url"),
     isVerified: boolean("is_verified").default(false).notNull(),
     isBlocked: boolean("is_blocked").default(false).notNull(),
+    /** False for accounts created automatically at checkout, until the person picks a password. */
+    passwordSet: boolean("password_set").default(true).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({ emailIdx: uniqueIndex("users_email_idx").on(t.email) })
@@ -554,6 +556,16 @@ export const staff = pgTable("staff", {
   role: text("role").default("door").notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Phones and laptops that get a push for every new booking (the admin's installed app). */
+export const adminDevices = pgTable("admin_devices", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  label: text("label"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

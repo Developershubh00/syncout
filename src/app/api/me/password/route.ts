@@ -15,8 +15,10 @@ export async function POST(req: Request) {
   if (!rl.ok) return NextResponse.json({ error: "Too many tries — wait a bit." }, { status: 429 });
   const parsed = passwordChangeSchema.safeParse(await readJson(req));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Check the form" }, { status: 422 });
-  const [u] = await db.select({ hash: users.passwordHash }).from(users).where(eq(users.id, me.id)).limit(1);
-  if (!u || !(await verifyPassword(parsed.data.current, u.hash))) return NextResponse.json({ error: "Current password is wrong" }, { status: 401 });
-  await db.update(users).set({ passwordHash: await hashPassword(parsed.data.next) }).where(eq(users.id, me.id));
+  const [u] = await db.select({ hash: users.passwordHash, set: users.passwordSet }).from(users).where(eq(users.id, me.id)).limit(1);
+  if (!u) return NextResponse.json({ error: "Log in first" }, { status: 401 });
+  if (u.set && !(parsed.data.current && (await verifyPassword(parsed.data.current, u.hash))))
+    return NextResponse.json({ error: "Current password is wrong" }, { status: 401 });
+  await db.update(users).set({ passwordHash: await hashPassword(parsed.data.next), passwordSet: true }).where(eq(users.id, me.id));
   return NextResponse.json({ ok: true });
 }

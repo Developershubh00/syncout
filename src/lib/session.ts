@@ -79,8 +79,8 @@ export async function clearUserSession() {
 
 /* ── admin ── */
 export async function createAdminSession(via: "password" | "key") {
-  const token = await sign({ admin: true, via }, "12h");
-  (await cookies()).set(ADMIN_COOKIE, token, { ...base, maxAge: 60 * 60 * 12 });
+  const token = await sign({ admin: true, via }, "7d");
+  (await cookies()).set(ADMIN_COOKIE, token, { ...base, maxAge: 60 * 60 * 24 * 7 });
 }
 
 export async function getAdmin(): Promise<AdminSession | null> {

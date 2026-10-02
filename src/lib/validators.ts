@@ -301,7 +301,8 @@ export const profileSchema = z.object({
 });
 
 export const passwordChangeSchema = z.object({
-  current: z.string().min(1, "Enter your current password"),
+  /** Not needed the first time, for accounts made at checkout. */
+  current: z.string().optional(),
   next: z.string().min(6, "Use at least 6 characters").max(100),
 });
 

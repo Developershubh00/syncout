@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { LIVE_CITIES } from "@/lib/cities";
 
-type Me = { name: string; email: string; phone: string | null; instagram: string | null; citySlug: string | null; gender: string | null };
+type Me = { name: string; email: string; phone: string | null; instagram: string | null; citySlug: string | null; gender: string | null; passwordSet?: boolean };
 
 export function ProfileEditor({ me }: { me: Me }) {
   const router = useRouter();
@@ -65,22 +65,27 @@ export function ProfileEditor({ me }: { me: Me }) {
         </Button>
       </section>
 
-      <section className="space-y-3.5 rounded-[20px] border border-line bg-surface p-4">
-        <h2 className="text-[16px]">Change password</h2>
-        <Input label="Current password" type="password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} autoComplete="current-password" />
+      <section className={"space-y-3.5 rounded-[20px] border bg-surface p-4 " + (me.passwordSet === false ? "border-gold/40" : "border-line")}>
+        <h2 className="text-[16px]">{me.passwordSet === false ? "Set a password" : "Change password"}</h2>
+        {me.passwordSet === false ? (
+          <p className="text-[12.5px] leading-relaxed text-muted">Your account was made when you booked, so you&apos;re logged in on this phone. Set a password to log in on other devices too.</p>
+        ) : (
+          <Input label="Current password" type="password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} autoComplete="current-password" />
+        )}
         <Input label="New password" type="password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} autoComplete="new-password" />
         <Button
           full
           variant="ghost"
           loading={busy === "pw"}
           onClick={async () => {
-            if (await call("/api/me/password", "POST", pw, "pw")) {
-              toast("Password changed");
+            if (await call("/api/me/password", "POST", me.passwordSet === false ? { next: pw.next } : pw, "pw")) {
+              toast(me.passwordSet === false ? "Password set — log in anywhere with your email" : "Password changed");
+              router.refresh();
               setPw({ current: "", next: "" });
             }
           }}
         >
-          <KeyRound className="size-4" /> Update password
+          <KeyRound className="size-4" /> {me.passwordSet === false ? "Set password" : "Update password"}
         </Button>
       </section>
 

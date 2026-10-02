@@ -8,9 +8,10 @@ import { absUrl } from "./site";
 const sha = (t: string) => crypto.createHash("sha256").update(t).digest("hex");
 
 /** A one-hour, single-use reset link. Only the hash is stored. */
-export async function createResetLink(userId: string) {
+/** ttl defaults to one hour; the welcome email after checkout uses a week. */
+export async function createResetLink(userId: string, ttlMs = 3600e3) {
   const token = crypto.randomBytes(32).toString("base64url");
-  await db.insert(passwordResets).values({ userId, tokenHash: sha(token), expiresAt: new Date(Date.now() + 3600e3) });
+  await db.insert(passwordResets).values({ userId, tokenHash: sha(token), expiresAt: new Date(Date.now() + ttlMs) });
   return absUrl(`/reset?token=${token}`);
 }
 

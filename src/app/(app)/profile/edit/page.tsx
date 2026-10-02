@@ -15,7 +15,7 @@ export default async function EditProfilePage() {
   const me = await getUser();
   if (!me) redirect("/login");
   const [u] = await db
-    .select({ name: users.name, email: users.email, phone: users.phone, instagram: users.instagram, citySlug: users.citySlug, gender: users.gender })
+    .select({ name: users.name, email: users.email, phone: users.phone, instagram: users.instagram, citySlug: users.citySlug, gender: users.gender, passwordSet: users.passwordSet })
     .from(users)
     .where(eq(users.id, me.id))
     .limit(1);

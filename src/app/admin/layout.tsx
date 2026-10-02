@@ -3,8 +3,17 @@ import { getAdmin } from "@/lib/session";
 import { ToastHost } from "@/components/ui/Toast";
 import { AdminLogout } from "@/components/admin/AdminLogout";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { AdminLive } from "@/components/admin/AdminLive";
+import { AdminAlertsToggle } from "@/components/admin/AdminAlertsToggle";
+import { PwaProvider } from "@/components/pwa/PwaProvider";
+import { InstallButton } from "@/components/pwa/InstallButton";
 
-export const metadata = { title: "Admin" };
+// Its own installable app: "SyncOut Admin" opens straight to the dashboard.
+export const metadata = {
+  title: "Admin",
+  manifest: "/admin-manifest.json",
+  appleWebApp: { capable: true, title: "SyncOut Admin", statusBarStyle: "black-translucent" as const },
+};
 export const dynamic = "force-dynamic";
 
 const ADMIN_NAV = [
@@ -41,9 +50,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <ToastHost>
+      <PwaProvider>
+      <AdminLive />
       <div className="min-h-dvh lg:flex">
         {/* Desktop sidebar */}
-        <aside className="hidden w-[212px] shrink-0 border-r border-line lg:flex lg:flex-col">
+        <aside className="hidden w-[212px] shrink-0 border-r border-line print:!hidden lg:flex lg:flex-col">
           <div className="px-5 py-5">
             <Link href="/admin" className="font-display text-[18px] font-extrabold tracking-tight">
               Sync<span className="text-red">Out</span>
@@ -54,6 +65,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <AdminNav items={ADMIN_NAV} />
 
           <div className="mt-auto space-y-2 border-t border-line p-4">
+            <AdminAlertsToggle />
+            <InstallButton variant="pill" />
             <Link href="/" className="block text-[12.5px] text-muted hover:text-text">
               View site
             </Link>
@@ -63,7 +76,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
         <div className="min-w-0 flex-1">
           {/* Phone header — unchanged behaviour, just hidden on desktop */}
-          <header className="sticky top-0 z-30 border-b border-line bg-ink/90 backdrop-blur-xl lg:hidden">
+          <header className="sticky top-0 z-30 border-b border-line bg-ink/90 backdrop-blur-xl print:hidden lg:hidden">
             <div className="flex items-center gap-3 px-4 py-3">
               <Link href="/admin" className="font-display text-[18px] font-extrabold tracking-tight">
                 Sync<span className="text-red">Out</span>
@@ -72,6 +85,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 </span>
               </Link>
               <div className="ml-auto flex items-center gap-2">
+                <AdminAlertsToggle compact />
                 <Link href="/" className="text-[12.5px] text-muted">
                   View site
                 </Link>
@@ -94,6 +108,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className="mx-auto max-w-3xl pb-16 lg:max-w-none lg:px-8 lg:pb-10">{children}</div>
         </div>
       </div>
+      </PwaProvider>
     </ToastHost>
   );
 }

@@ -15,6 +15,7 @@ import { PaymentPanel } from "@/components/events/PaymentPanel";
 import { PartyBackground } from "@/components/fx/Backgrounds";
 import { TicketQr } from "@/components/TicketQr";
 import { SplitPasses } from "@/components/SplitPasses";
+import { code128Svg } from "@/lib/barcode";
 import { AddToCalendar } from "@/components/AddToCalendar";
 import { ShareButton } from "@/components/ShareButton";
 import { absUrl } from "@/lib/site";
@@ -109,7 +110,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
               <p className={`mt-1 font-display text-[32px] font-extrabold leading-none tracking-[0.14em] ${confirmed ? "text-gold" : "text-text"}`}>{o.code}</p>
               {confirmed && <p className="mt-2 text-[11.5px] text-muted">Admits {o.admits}</p>}
             </div>
-            {doorQr && <TicketQr svg={doorQr} caption={o.admits > 1 ? `Lets in all ${o.admits} at once — or send each friend their own pass below.` : "Brightness up, and show this with a photo ID. It opens offline once you've viewed it here."} />}
+            {doorQr && <TicketQr svg={doorQr} barcode={code128Svg(o.code)} caption={o.admits > 1 ? `Lets in all ${o.admits} at once — or send each friend their own pass below.` : "Brightness up, and show this with a photo ID. It opens offline once you've viewed it here."} />}
             {o.discount > 0 && <p className="mt-3 text-[12.5px] font-semibold text-gold">Code {o.promoCode} saved you {rs(o.discount)}</p>}
           </div>
         </div>

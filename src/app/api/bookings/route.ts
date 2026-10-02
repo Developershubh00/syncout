@@ -6,6 +6,8 @@ import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { bookingSchema } from "@/lib/validators";
 import { guestlistWindow } from "@/lib/guestlist";
 import { getUser } from "@/lib/session";
+import { accountForCheckout, emailBlocked } from "@/lib/auto-account";
+import { alertAdmins } from "@/lib/admin-alerts";
 import { sendMail, guestlistReceivedEmail } from "@/lib/mail";
 import { friendlyDate } from "@/lib/utils";
 import { passPath } from "@/lib/access";
@@ -64,6 +66,8 @@ export async function POST(req: Request) {
   if (user) {
     const [u] = await db.select({ blocked: users.isBlocked }).from(users).where(eq(users.id, user.id)).limit(1);
     if (u?.blocked) return NextResponse.json({ error: "This account is on hold. Contact support." }, { status: 403 });
+  } else if (await emailBlocked(d.guestEmail)) {
+    return NextResponse.json({ error: "This account is on hold. Contact support." }, { status: 403 });
   }
 
   const phone = d.guestPhone.trim();
@@ -138,8 +142,20 @@ export async function POST(req: Request) {
   const url = passPath(row.code);
   const saved = row;
 
-  if (user) {
-    await notifyUsers([user.id], {
+  const acct = await accountForCheckout(user, { name: d.guestName, email: d.guestEmail, phone }).catch(() => ({ userId: null, account: null }));
+  if (!user && acct.userId) await db.execute(sql`update bookings set user_id = ${acct.userId}::uuid where id = ${saved.id}::uuid`);
+
+  later(() =>
+    alertAdmins({
+      title: "New guestlist request",
+      body: `${night.title} at ${hit.clubName} — ${d.guestName.trim()}, ${d.femaleCount + d.maleCount} people`,
+      url: "/admin/bookings?status=pending",
+      tag: saved.code,
+    })
+  );
+
+  if (acct.userId) {
+    await notifyUsers([acct.userId], {
       kind: "receipt",
       title: "Guestlist request sent",
       body: `${night.title} at ${hit.clubName}. We confirm by 6 PM.`,
@@ -163,5 +179,5 @@ export async function POST(req: Request) {
     })
   );
 
-  return NextResponse.json({ ok: true, code: saved.code, id: saved.id, url }, { status: 201 });
+  return NextResponse.json({ ok: true, code: saved.code, id: saved.id, url, account: acct.account }, { status: 201 });
 }

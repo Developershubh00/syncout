@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { getUser } from "@/lib/session";
 import { getUserBookings } from "@/lib/queries";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { KeyRound } from "lucide-react";
 import { LogoutButton } from "@/components/LogoutButton";
 import { ChevronRight, Ticket, Disc3, LifeBuoy, Sparkles, Bell, UserPen, Briefcase, ShieldCheck as Shield } from "lucide-react";
 import { InstallButton } from "@/components/pwa/InstallButton";
@@ -11,7 +15,12 @@ export const metadata = { title: "You" };
 
 export default async function ProfilePage() {
   const user = await getUser();
-  const bookings = user ? await getUserBookings(user.id) : [];
+  const [bookings, needsPassword] = user
+    ? await Promise.all([
+        getUserBookings(user.id),
+        db.select({ set: users.passwordSet }).from(users).where(eq(users.id, user.id)).limit(1).then((r) => r[0]?.set === false).catch(() => false),
+      ])
+    : [[], false];
   const approved = bookings.filter((b) => b.status === "approved" || b.status === "checked_in").length;
 
   return (
@@ -28,6 +37,13 @@ export default async function ProfilePage() {
                 <p className="truncate text-[13px] text-muted">{user.email}</p>
               </div>
             </div>
+            {needsPassword && (
+              <Link href="/profile/edit" className="mt-4 flex items-center gap-3 rounded-[18px] border border-gold/40 bg-gold/[0.07] p-3.5">
+                <KeyRound className="size-5 shrink-0 text-gold" />
+                <span className="min-w-0 flex-1 text-[13px] leading-snug"><b>Set a password</b> — you&apos;re logged in on this phone; a password lets you log in anywhere.</span>
+                <ChevronRight className="size-4 text-muted" />
+              </Link>
+            )}
             <div className="mt-4 grid grid-cols-2 gap-2.5">
               <Stat n={bookings.length} label="Applications" />
               <Stat n={approved} label="Nights approved" gold />

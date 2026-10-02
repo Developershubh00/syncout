@@ -63,3 +63,23 @@ export async function pushToUsers(userIds: string[], payload: PushPayload) {
   if (dead.length) await db.delete(pushSubscriptions).where(inArray(pushSubscriptions.id, dead)).catch(() => {});
   return sent;
 }
+
+/** Sends to raw subscriptions (admin devices). Returns endpoints that are gone for good. */
+export async function pushToEndpoints(subs: { endpoint: string; p256dh: string; auth: string }[], payload: PushPayload) {
+  if (!setup() || !subs.length) return { sent: 0, dead: [] as string[] };
+  const body = JSON.stringify(payload);
+  const dead: string[] = [];
+  let sent = 0;
+  await Promise.all(
+    subs.map(async (s) => {
+      try {
+        await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, body, { TTL: 60 * 60 * 6, timeout: 6000, urgency: "high" });
+        sent++;
+      } catch (e) {
+        const code = (e as { statusCode?: number }).statusCode;
+        if (code === 404 || code === 410) dead.push(s.endpoint);
+      }
+    })
+  );
+  return { sent, dead };
+}

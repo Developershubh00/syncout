@@ -29,6 +29,13 @@
       "when": 1790904584210,
       "tag": "0003_v64_promos_waitlist_staff",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790906450696,
+      "tag": "0004_v65_alerts_auto_accounts",
+      "breakpoints": true
     }
   ]
 }

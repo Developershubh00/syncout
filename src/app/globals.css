@@ -277,3 +277,11 @@ input[type="number"] { -moz-appearance: textfield; }
 .wa-fab { transition: opacity 0.2s ease, transform 0.2s ease; }
 body[data-sheet] .wa-fab { opacity: 0; transform: scale(0.6); pointer-events: none; }
 @media (min-width: 1024px) { .wa-fab { bottom: 24px !important; } }
+
+/* Entry cards print black on white */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  .print-card { background: #fff !important; color: #000 !important; border-color: #000 !important; }
+  .print-card * { color: #000 !important; border-color: #ccc !important; }
+  .fx-bg, .wa-fab { display: none !important; }
+}

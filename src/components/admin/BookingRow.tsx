@@ -1,4 +1,5 @@
 "use client";
+import { QrCode } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -76,7 +77,7 @@ export function BookingRow({ b }: { b: B }) {
         </div>
 
         <p className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12px] text-faint">
-          <span className="tracking-[0.08em] text-muted">{b.code}</span>
+          <a href={`/admin/tickets/${b.code}`} className="inline-flex items-center gap-1 tracking-[0.08em] text-muted underline-offset-2 hover:text-text hover:underline" title="QR, barcode and full details">{b.code} <QrCode className="size-3.5" /></a>
           <span>{entry}</span>
           <span>{b.totalGuests} guest{b.totalGuests > 1 ? "s" : ""} ({b.femaleCount}F / {b.maleCount}M)</span>
           <span>{friendlyDate(b.startsAt)} {fmtTime(b.startsAt)}</span>

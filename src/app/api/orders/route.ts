@@ -8,6 +8,9 @@ import { orderSchema } from "@/lib/validators";
 import { getUser } from "@/lib/session";
 import { getSettings } from "@/lib/settings";
 import { quotePromo, claimPromo, releasePromo } from "@/lib/promos";
+import { accountForCheckout, emailBlocked } from "@/lib/auto-account";
+import { alertAdmins } from "@/lib/admin-alerts";
+import { waLink, bookingEnquiryMessage } from "@/lib/whatsapp";
 import { eventDays } from "@/lib/tevents";
 import { dayLabel, rs } from "@/lib/event-format";
 import { looksLikeVpa } from "@/lib/upi";
@@ -56,6 +59,8 @@ export async function POST(req: Request) {
   if (user) {
     const [u] = await db.select({ blocked: users.isBlocked }).from(users).where(eq(users.id, user.id)).limit(1);
     if (u?.blocked) return NextResponse.json({ error: "This account is on hold. Contact support." }, { status: 403 });
+  } else if (await emailBlocked(d.email)) {
+    return NextResponse.json({ error: "This account is on hold. Contact support." }, { status: 403 });
   }
 
   const settings = await getSettings();
@@ -121,8 +126,21 @@ export async function POST(req: Request) {
   const url = ticketPath(saved.code);
   const tickets = `${d.quantity} × ${tier.name}`;
 
-  if (user) {
-    await notifyUsers([user.id], {
+  // Not logged in? Save it to an account (new email → signed in now).
+  const acct = await accountForCheckout(user, { name: d.name, email: d.email, phone: d.phone, citySlug: ev.citySlug }).catch(() => ({ userId: null, account: null }));
+  if (!user && acct.userId) await db.execute(sql`update ticket_orders set user_id = ${acct.userId}::uuid where id = ${saved.id}::uuid`);
+
+  later(() =>
+    alertAdmins({
+      title: amount > 0 ? `New booking · ${rs(amount)}` : "New free booking",
+      body: `${ev.title} · ${tickets} · ${dayLabel(day)} — ${d.name} (${d.phone})`,
+      url: `/admin/tickets/${saved.code}`,
+      tag: saved.code,
+    })
+  );
+
+  if (acct.userId) {
+    await notifyUsers([acct.userId], {
       kind: "receipt",
       title: mode === "free" ? "Booking requested" : "Booking requested — complete payment",
       body: `${ev.title} · ${dayLabel(day)} · ${tickets}`,
@@ -149,5 +167,9 @@ export async function POST(req: Request) {
     })
   );
 
-  return NextResponse.json({ ok: true, code: saved.code, url, mode }, { status: 201 });
+  const whatsappUrl =
+    mode === "whatsapp"
+      ? waLink(settings.whatsapp, bookingEnquiryMessage({ code: saved.code, eventTitle: ev.title, venue: ev.venueName, dayLabel: dayLabel(day), tierName: tier.name, quantity: d.quantity, amount, name: d.name, phone: d.phone }))
+      : null;
+  return NextResponse.json({ ok: true, code: saved.code, url, mode, account: acct.account, whatsappUrl }, { status: 201 });
 }

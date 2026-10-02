@@ -1,7 +1,7 @@
 "use client";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Portal } from "@/components/ui/Portal";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Check } from "lucide-react";
 
 const COLORS = ["#e4113c", "#f2c14e", "#ff3b5c", "#ffffff", "#00e5ff", "#ff2bd6", "#ff8a00"];
@@ -18,14 +18,19 @@ export function ThankYouSplash({
   festive = true,
   autoMs = 2600,
   onDone,
+  actions,
+  note,
 }: {
   open: boolean;
   title: string;
   body?: string;
   code?: string;
   festive?: boolean;
+  /** 0 = wait for a tap (used when the next step is "send on WhatsApp"). */
   autoMs?: number;
   onDone?: () => void;
+  actions?: React.ReactNode;
+  note?: string;
 }) {
   const reduce = useReducedMotion();
   const bits = useMemo(
@@ -48,11 +53,15 @@ export function ThankYouSplash({
     [open]
   );
 
+  // Keep the latest onDone in a ref: a parent that re-renders (a ticking
+  // countdown, say) must not keep restarting the timer — that froze the splash.
+  const done = useRef(onDone);
+  done.current = onDone;
   useEffect(() => {
-    if (!open || !onDone) return;
-    const t = setTimeout(onDone, autoMs);
+    if (!open || !autoMs) return;
+    const t = setTimeout(() => done.current?.(), autoMs);
     return () => clearTimeout(t);
-  }, [open, onDone, autoMs]);
+  }, [open, autoMs]);
 
   return (
     <Portal>
@@ -163,12 +172,16 @@ export function ThankYouSplash({
               </motion.p>
             )}
             <div className="mx-auto mt-7 h-1 w-40 overflow-hidden rounded-full bg-line">
-              <motion.div
+              {autoMs > 0 && (
+                <motion.div
                 className="h-full bg-red"
                 initial={{ width: "0%" }}
                 animate={{ width: "100%" }}
                 transition={{ duration: autoMs / 1000, ease: "linear" }}
               />
+              )}
+              {note && <p className="mx-auto mt-4 max-w-[30ch] text-[12.5px] leading-relaxed text-white/70">{note}</p>}
+              {actions && <div className="mx-auto mt-5 flex max-w-[320px] flex-col gap-2.5">{actions}</div>}
             </div>
           </div>
         </motion.div>

@@ -12,6 +12,6 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Check the form" }, { status: 422 });
   const userId = await consumeReset(parsed.data.token);
   if (!userId) return NextResponse.json({ error: "This link has expired or was already used. Ask for a new one." }, { status: 410 });
-  await db.update(users).set({ passwordHash: await hashPassword(parsed.data.password) }).where(eq(users.id, userId));
+  await db.update(users).set({ passwordHash: await hashPassword(parsed.data.password), passwordSet: true }).where(eq(users.id, userId));
   return NextResponse.json({ ok: true });
 }

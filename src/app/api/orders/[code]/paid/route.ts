@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { alertAdmins } from "@/lib/admin-alerts";
+import { later } from "@/lib/notify";
 import { db } from "@/db";
 import { ticketOrders } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -32,5 +34,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ code: s
     })
     .where(eq(ticketOrders.id, order.id));
 
+  const rupees = "₹" + order.amount.toLocaleString("en-IN");
+  later(() =>
+    alertAdmins(
+      parsed.data.enquiry
+        ? { title: "Customer messaged on WhatsApp", body: `${order.name} · ${order.quantity} × ${order.tierName} · ${rupees} (${order.code}) — reply on WhatsApp`, url: `/admin/tickets/${order.code}`, tag: `wa-${order.code}` }
+        : { title: `Payment to verify · ${rupees}`, body: `${order.name} says they paid for ${order.quantity} × ${order.tierName} (${order.code})${utr ? ` — UTR ${utr}` : ""}`, url: "/admin/orders?status=payment_submitted", tag: `pay-${order.code}` }
+    )
+  );
   return NextResponse.json({ ok: true, status: parsed.data.enquiry ? order.status : "payment_submitted" });
 }

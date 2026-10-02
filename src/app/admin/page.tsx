@@ -6,6 +6,7 @@ import { friendlyDate, fmtTime } from "@/lib/utils";
 import { ArrowRight } from "lucide-react";
 import { dbHealth } from "@/db/health";
 import { SetupPanel } from "@/components/admin/SetupPanel";
+import { AdminAlertsToggle } from "@/components/admin/AdminAlertsToggle";
 import { db } from "@/db";
 import { inquiries, jobApplications } from "@/db/schema";
 import { count, eq } from "drizzle-orm";
@@ -29,6 +30,14 @@ export default async function AdminHome() {
       </h1>
 
       {needsSetup && <SetupPanel health={health} />}
+
+      <div className="mt-4 rounded-[18px] border border-line bg-surface p-4">
+        <p className="text-[14px] font-semibold">Booking alerts</p>
+        <p className="mb-3 mt-0.5 text-[12.5px] text-muted">
+          A notification on this phone or laptop for every new booking, payment and guestlist request — even when the app is closed. On iPhone, add SyncOut Admin to your Home Screen first.
+        </p>
+        <div className="max-w-[320px]"><AdminAlertsToggle /></div>
+      </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
         <Stat n={stats.pending} label="Guestlist to review" accent href="/admin/bookings?status=pending" />

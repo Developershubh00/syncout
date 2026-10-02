@@ -11,6 +11,7 @@ import { qrSvg } from "@/lib/upi";
 import { absUrl } from "@/lib/site";
 import { TicketQr } from "@/components/TicketQr";
 import { AddToCalendar } from "@/components/AddToCalendar";
+import { code128Svg } from "@/lib/barcode";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Your pass", robots: { index: false, follow: false } };
@@ -131,7 +132,7 @@ export default async function PassPage({
 
       {doorQr && (
         <div className="space-y-2.5 px-4">
-          <TicketQr svg={doorQr} caption="Show this at the door with a photo ID for everyone in your group. Works offline once opened." />
+          <TicketQr svg={doorQr} barcode={code128Svg(b.code)} caption="Show this at the door with a photo ID for everyone in your group. Works offline once opened." />
           <AddToCalendar
             title={`${b.eventTitle} — ${b.clubName}`}
             start={new Date(b.startsAt)}

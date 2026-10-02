@@ -7,6 +7,7 @@ import { readJson } from "@/lib/api";
 import { getSettings } from "@/lib/settings";
 import { sendMail, esc } from "@/lib/mail";
 import { later } from "@/lib/notify";
+import { alertAdmins } from "@/lib/admin-alerts";
 
 export async function POST(req: Request) {
   const rl = rateLimit(`contact:${clientIp(req)}`, 5, 30 * 60_000);
@@ -17,6 +18,7 @@ export async function POST(req: Request) {
   if (d.website) return NextResponse.json({ ok: true }); // bot
 
   await db.insert(inquiries).values({ kind: d.kind, name: d.name, email: d.email || null, phone: d.phone || null, message: d.message });
+  later(() => alertAdmins({ title: `New message · ${d.kind}`, body: `${d.name}: ${d.message.slice(0, 120)}`, url: "/admin/inbox", tag: "inbox" }));
   const s = await getSettings();
   later(() =>
     sendMail({

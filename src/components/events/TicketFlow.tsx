@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, ExternalLink, Lock, Minus, Plus, Ticket, MessageCircle, BellRing, TicketPercent } from "lucide-react";
-import { Countdown, useNow } from "@/components/events/Countdown";
+import { Countdown } from "@/components/events/Countdown";
 import { readSavedPromo } from "@/components/PromoCapture";
 import { Sheet, SheetFooter } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
@@ -52,9 +52,8 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [done, setDone] = useState<{ code: string; url: string; mode: string } | null>(null);
+  const [done, setDone] = useState<{ code: string; url: string; mode: string; account: string | null; whatsappUrl: string | null } | null>(null);
   const [form, setForm] = useState({ name: user?.name ?? "", phone: "", email: user?.email ?? "", note: "" });
-  const now = useNow(1000);
   const [promoInput, setPromoInput] = useState("");
   const [promo, setPromo] = useState<{ code: string; label: string; discount: number; key: string } | null>(null);
   const [promoErr, setPromoErr] = useState<string | null>(null);
@@ -76,7 +75,7 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
   const discount = promo && promo.key === quoteKey ? promo.discount : 0;
   const total = subtotal - discount;
   const saleState = (t: FlowTier): "soon" | "ended" | "on" => {
-    const n = now ?? Date.now();
+    const n = Date.now();
     if (t.salesStartAt && new Date(t.salesStartAt).getTime() > n) return "soon";
     if (t.salesEndAt && new Date(t.salesEndAt).getTime() <= n) return "ended";
     return "on";
@@ -85,7 +84,7 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
     const live = tiers.filter((t) => saleState(t) === "on");
     return live.length ? Math.min(...live.map((t) => t.price)) : tiers.length ? Math.min(...tiers.map((t) => t.price)) : 0;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tiers, now === null]);
+  }, [tiers]);
 
   async function applyPromo(code = promoInput) {
     if (!tier || !code.trim()) return;
@@ -174,7 +173,7 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
       if (!res.ok) throw new Error(data.error ?? "Something went wrong");
       track("order_created", { value: total, label: event.title });
       setOpen(false);
-      setDone({ code: data.code, url: data.url, mode: data.mode });
+      setDone({ code: data.code, url: data.url, mode: data.mode, account: data.account ?? null, whatsappUrl: data.whatsappUrl ?? null });
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn't book — try again", "err");
     } finally {
@@ -433,16 +432,47 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
 
       <ThankYouSplash
         open={Boolean(done)}
-        title="Booking requested"
+        title={done?.mode === "free" ? "You're booked" : "Booking requested"}
         body={
           done?.mode === "upi"
-            ? "Now pay with the UPI QR and send the screenshot on WhatsApp."
+            ? "Next: pay by UPI on your ticket page."
             : done?.mode === "whatsapp"
-            ? "One more tap: send it to us on WhatsApp."
-            : "We'll confirm your spot shortly."
+              ? "Last step: send it to us on WhatsApp — we confirm and share payment details there."
+              : "We'll confirm your spot shortly."
         }
         code={done?.code}
-        autoMs={2800}
+        festive
+        autoMs={done?.mode === "whatsapp" ? 0 : 2600}
+        note={
+          done?.account === "created"
+            ? "Saved to your new SyncOut account — you're logged in, so your ticket and its status are always in Passes."
+            : done?.account === "existing"
+              ? `Saved to the SyncOut account for ${form.email.trim()}. Log in to see it in Passes.`
+              : undefined
+        }
+        actions={
+          done?.mode === "whatsapp" && done.whatsappUrl ? (
+            <>
+              <a
+                href={done.whatsappUrl}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => {
+                  const k = new URL(done.url, window.location.origin).searchParams.get("k");
+                  fetch(`/api/orders/${done.code}/paid`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ k, enquiry: true }), keepalive: true }).catch(() => {});
+                  track("whatsapp_click", { value: total, label: event.title });
+                  setTimeout(() => router.push(done.url), 600);
+                }}
+                className="flex h-13 items-center justify-center gap-2 rounded-2xl bg-[#25D366] py-3.5 text-[15px] font-semibold text-white"
+              >
+                <MessageCircle className="size-5" /> Send on WhatsApp
+              </a>
+              <button onClick={() => router.push(done.url)} className="h-12 rounded-2xl border border-white/15 text-[14px] font-semibold text-white/85">
+                View my ticket
+              </button>
+            </>
+          ) : undefined
+        }
         onDone={() => done && router.push(done.url)}
       />
     </>

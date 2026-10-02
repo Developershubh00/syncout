@@ -52,7 +52,7 @@ export function BookingFlow({
   const [guys, setGuys] = useState(0);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [done, setDone] = useState<{ code: string; url: string } | null>(null);
+  const [done, setDone] = useState<{ code: string; url: string; account: string | null } | null>(null);
 
   const [form, setForm] = useState({
     guestName: user?.name ?? "",
@@ -119,7 +119,7 @@ export function BookingFlow({
       if (!res.ok) throw new Error(data.error ?? "Something went wrong");
       track("booking_requested", { label: night.title });
       setOpen(false);
-      setDone({ code: data.code, url: data.url ?? `/passes/${data.code}` });
+      setDone({ code: data.code, url: data.url ?? `/passes/${data.code}`, account: data.account ?? null });
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn't submit — try again", "err");
     } finally {
@@ -361,6 +361,13 @@ export function BookingFlow({
         title="Application sent"
         body="We confirm every list by 6 PM — you'll get a notification and an email either way."
         code={done?.code}
+        note={
+          done?.account === "created"
+            ? "Saved to your new SyncOut account — you're logged in, so your pass and its status are always in Passes."
+            : done?.account === "existing"
+              ? "Saved to your SyncOut account — log in to see it in Passes."
+              : undefined
+        }
         onDone={() => done && router.push(done.url)}
       />
     </>

@@ -7,7 +7,8 @@ import { useToast } from "@/components/ui/Toast";
 
 type Result = {
   kind: "pass" | "ticket";
-  id: string;
+  id?: string;
+  rows?: [string, string][];
   code: string;
   status: string;
   ok: boolean;
@@ -42,6 +43,13 @@ export function DoorScanner({ initialCode, initialGuest }: { initialCode?: strin
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
   const raf = useRef<number>(0);
+  const input = useRef<HTMLInputElement>(null);
+
+  // Laptops/desktops at the door: keep the box focused so a USB or Bluetooth
+  // scanner gun can "type" the barcode and press Enter.
+  useEffect(() => {
+    if (window.matchMedia("(pointer: fine)").matches) input.current?.focus();
+  }, [res]);
 
   useEffect(() => {
     if (initialCode) find(initialCode, initialGuest ?? null);
@@ -142,6 +150,8 @@ export function DoorScanner({ initialCode, initialGuest }: { initialCode?: strin
     <div className="mt-5">
       <form onSubmit={lookup} className="flex gap-2.5">
         <input
+          ref={input}
+          onFocus={(e) => e.currentTarget.select()}
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           placeholder="ABC123"
@@ -208,6 +218,16 @@ export function DoorScanner({ initialCode, initialGuest }: { initialCode?: strin
               <p className="mt-1 text-[12.5px] text-faint">
                 {res.eventTitle} · {res.clubName} · {res.guestPhone}
               </p>
+              {res.rows && res.rows.length > 0 && (
+                <dl className="mt-3.5 grid grid-cols-[92px_1fr] gap-x-3 gap-y-1.5 rounded-xl bg-ink/40 p-3 text-[12.5px]">
+                  {res.rows.map(([k, v]) => (
+                    <div key={k} className="contents">
+                      <dt className="text-faint">{k}</dt>
+                      <dd className="min-w-0 break-words">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
             </div>
             {res.ok && (res.guest ? !res.admitted.includes(res.guest) : res.status !== "checked_in") && (
               <div className="border-t border-line p-3">

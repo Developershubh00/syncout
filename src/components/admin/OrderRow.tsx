@@ -1,4 +1,5 @@
 "use client";
+import { QrCode } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Phone, MessageCircle, ChevronDown, LogIn, Ban } from "lucide-react";
@@ -56,7 +57,7 @@ export function OrderRow({ o }: { o: O }) {
           </div>
         </div>
         <p className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12px] text-faint">
-          <span className="tracking-[0.08em] text-muted">{o.code}</span>
+          <a href={`/admin/tickets/${o.code}`} className="inline-flex items-center gap-1 tracking-[0.08em] text-muted underline-offset-2 hover:text-text hover:underline" title="QR, barcode and full details">{o.code} <QrCode className="size-3.5" /></a>
           <span>{o.quantity} × {o.tierName}</span>
           <span>{o.admits} {o.admits === 1 ? "person" : "people"}</span>
           {o.utr && <span className="text-text">UTR {o.utr}</span>}
