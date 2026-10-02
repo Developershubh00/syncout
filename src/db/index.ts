@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import { neon, neonConfig } from "@neondatabase/serverless";
 import { drizzle, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 import * as schema from "./schema";
 
@@ -14,6 +14,9 @@ function connect(): NeonHttpDatabase<typeof schema> {
   if (!url) {
     throw new Error("DATABASE_URL is missing. Add your Neon connection string to .env.local");
   }
+  // Local development against a Neon-compatible HTTP proxy (e.g. local Postgres).
+  // Leave unset in production.
+  if (process.env.NEON_HTTP_ENDPOINT) neonConfig.fetchEndpoint = process.env.NEON_HTTP_ENDPOINT;
   client = drizzle(neon(url), { schema });
   return client;
 }

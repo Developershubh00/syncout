@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/Button";
 import { Input, Textarea, Select } from "@/components/ui/Field";
 import { useToast } from "@/components/ui/Toast";
 import { friendlyDate, cn, rupees } from "@/lib/utils";
+import { ThankYouSplash } from "@/components/fx/ThankYouSplash";
+import { track } from "@/lib/track";
 
 type EntryId = "stag_female" | "couple" | "stag_male";
 
@@ -50,6 +52,7 @@ export function BookingFlow({
   const [guys, setGuys] = useState(0);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [done, setDone] = useState<{ code: string; url: string } | null>(null);
 
   const [form, setForm] = useState({
     guestName: user?.name ?? "",
@@ -65,7 +68,7 @@ export function BookingFlow({
       (
         [
           { id: "stag_female" as const, label: "Girls", sub: "Solo or with your friends", Icon: User, on: night.femaleEnabled, price: night.femalePrice },
-          { id: "couple" as const, label: "Couple", sub: "One girl and one guy", Icon: Heart, on: night.coupleEnabled, price: night.couplePrice },
+          { id: "couple" as const, label: "Couples", sub: "In pairs — up to 4 couples", Icon: Heart, on: night.coupleEnabled, price: night.couplePrice },
           { id: "stag_male" as const, label: "Guys", sub: "Fewest spots — apply early", Icon: Users, on: night.maleEnabled, price: night.malePrice },
         ] as const
       ).filter((o) => o.on),
@@ -114,8 +117,9 @@ export function BookingFlow({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Something went wrong");
+      track("booking_requested", { label: night.title });
       setOpen(false);
-      router.push(`/passes/${data.code}`);
+      setDone({ code: data.code, url: data.url ?? `/passes/${data.code}` });
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn't submit — try again", "err");
     } finally {
@@ -216,24 +220,20 @@ export function BookingFlow({
                   className="overflow-hidden"
                 >
                   <div className="mt-5 space-y-3">
-                    {(entry === "stag_female" || entry === "couple") && (
+                    {entry === "couple" && (
                       <Counter
-                        label="Girls"
+                        label="Couples"
                         value={girls}
-                        min={entry === "couple" ? 1 : 1}
-                        max={entry === "couple" ? 4 : 5}
-                        onChange={setGirls}
-                      />
-                    )}
-                    {(entry === "stag_male" || entry === "couple") && (
-                      <Counter
-                        label="Guys"
-                        value={guys}
                         min={1}
-                        max={entry === "couple" ? 4 : 3}
-                        onChange={setGuys}
+                        max={4}
+                        onChange={(n) => {
+                          setGirls(n);
+                          setGuys(n);
+                        }}
                       />
                     )}
+                    {entry === "stag_female" && <Counter label="Girls" value={girls} min={1} max={5} onChange={setGirls} />}
+                    {entry === "stag_male" && <Counter label="Guys" value={guys} min={1} max={3} onChange={setGuys} />}
                     {total > spotsLeft && (
                       <p className="text-[12.5px] text-red-hot">
                         Only {spotsLeft} spots left on this list. Reduce the count to continue.
@@ -354,6 +354,15 @@ export function BookingFlow({
           )}
         </AnimatePresence>
       </Sheet>
+
+      <ThankYouSplash
+        open={Boolean(done)}
+        festive={false}
+        title="Application sent"
+        body="We confirm every list by 6 PM — you'll get a notification and an email either way."
+        code={done?.code}
+        onDone={() => done && router.push(done.url)}
+      />
     </>
   );
 }

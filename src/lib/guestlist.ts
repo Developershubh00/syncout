@@ -93,3 +93,35 @@ export const ENTRY_TYPES = [
 ] as const;
 
 export type EntryTypeId = (typeof ENTRY_TYPES)[number]["id"];
+
+/* ── IST calendar helpers (correct whatever timezone the server runs in) ── */
+
+/** YYYY-MM-DD for the IST calendar day containing `d`. */
+export function istDateKey(d: Date | string) {
+  const t = typeof d === "string" ? new Date(d) : d;
+  return new Date(t.getTime() + IST_OFFSET_MIN * 60000).toISOString().slice(0, 10);
+}
+
+/** The instant a YYYY-MM-DD IST day starts at `hour`:`minute`. */
+export function istAt(dayKey: string, hour = 0, minute = 0) {
+  const [y, m, d] = dayKey.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d, hour, minute, 0) - IST_OFFSET_MIN * 60000);
+}
+
+/**
+ * The door night that `now` belongs to: midday IST → 6 AM IST next morning.
+ * Before 6 AM it's still last night, so a 1 AM export lists the right guests.
+ */
+export function istNightWindow(now = new Date()) {
+  const ist = new Date(now.getTime() + IST_OFFSET_MIN * 60000);
+  const day = new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate()));
+  if (ist.getUTCHours() < 6) day.setUTCDate(day.getUTCDate() - 1);
+  const from = new Date(day.getTime() + 12 * 3600e3 - IST_OFFSET_MIN * 60000);
+  const to = new Date(from.getTime() + 18 * 3600e3);
+  return { from, to };
+}
+
+/** Start of the IST day containing `now`. */
+export function istDayStart(now = new Date()) {
+  return istAt(istDateKey(now));
+}

@@ -1,197 +1,108 @@
 /**
- * Seeds cities, clubs, two weeks of nights and a few offers.
- * Run: npm run db:seed   (safe to re-run — it clears and rebuilds)
+ * Fills in anything missing — never deletes.
+ *
+ *   npm run db:seed            cities, clubs, two weeks of sample nights,
+ *                              offers (if none), Navratri 2026 events,
+ *                              the Dandiya popup and default settings
+ *   npm run db:seed -- --demo  also adds sample reviews
+ *   npm run db:seed -- --reset WIPES clubs, nights and events first. Refuses
+ *                              while any guestlist booking or ticket order
+ *                              exists, because those would be deleted too.
+ *
+ * Safe to run against production: existing rows (and anything you edited in
+ * the admin panel) are left exactly as they are.
  */
 import "./load-env";
 import { db } from "./index";
-import { cities, clubs, events, offers, reviews } from "./schema";
-import { CITIES, CLUBS, EVENT_TEMPLATES } from "../data/venues";
-import { NCR_CLUBS } from "../data/venues-ncr";
+import { bookings, cities, clubs, events, offers, reviews, ticketOrders, ticketedEvents } from "./schema";
+import { istNightWindow } from "../lib/guestlist";
+import { seedCitiesAndClubs, seedNights, seedNavratri } from "./seed-core";
+import { asc, count } from "drizzle-orm";
+const args = new Set(process.argv.slice(2));
 
-const ALL_CLUBS = [...CLUBS, ...NCR_CLUBS];
-import { slugify } from "../lib/utils";
-
-function nightAt(daysAhead: number, hour = 21) {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + daysAhead);
-  // IST is UTC+5:30, so 21:00 IST == 15:30 UTC.
-  d.setUTCHours(hour - 6, 30, 0, 0);
-  return d;
-}
-
-async function main() {
-  console.log("→ clearing");
+async function reset() {
+  const [[b], [o]] = await Promise.all([
+    db.select({ n: count() }).from(bookings),
+    db.select({ n: count() }).from(ticketOrders),
+  ]);
+  if (b.n + o.n > 0) {
+    console.error(
+      `✗ --reset refused: ${b.n} guestlist booking(s) and ${o.n} ticket order(s) would be deleted with the clubs and events.\n` +
+        "  Run plain `npm run db:seed` instead — it only adds what's missing."
+    );
+    process.exit(1);
+  }
+  console.log("→ clearing clubs, nights, events, offers, reviews");
   await db.delete(reviews);
   await db.delete(offers);
   await db.delete(events);
+  await db.delete(ticketedEvents);
   await db.delete(clubs);
   await db.delete(cities);
+}
 
-  console.log("→ cities");
-  await db.insert(cities).values(CITIES.map((c) => ({ ...c, isActive: true })));
+async function main() {
+  if (args.has("--reset")) await reset();
 
-  console.log("→ clubs");
-  const inserted = await db
-    .insert(clubs)
-    .values(
-      ALL_CLUBS.map((c, i) => ({
-        name: c.name,
-        slug: c.slug,
-        citySlug: c.citySlug,
-        area: c.area,
-        address: c.address ?? null,
-        tagline: c.tagline,
-        description: c.description,
-        coverImage: c.coverImage,
-        gallery: [c.coverImage],
-        musicTypes: c.musicTypes,
-        tags: c.tags,
-        priceForTwo: c.priceForTwo,
-        openTime: c.openTime,
-        closeTime: c.closeTime,
-        dressCode: c.dressCode ?? "Smart casuals. No shorts, no slippers.",
-        rating: c.rating,
-        reviewCount: c.reviewCount,
-        isFeatured: c.isFeatured ?? false,
-        sortOrder: i,
-      }))
-    )
-    .returning();
+  console.log("→ cities & clubs");
+  console.log(`   ${await seedCitiesAndClubs()} new clubs`);
+  const allClubs = await db.select().from(clubs).orderBy(asc(clubs.sortOrder), asc(clubs.name));
 
-  console.log(`   ${inserted.length} clubs`);
+  console.log("→ club nights (next 14 days)");
+  console.log(`   ${await seedNights()} new`);
 
-  console.log("→ events (next 14 nights)");
-  const rows: (typeof events.$inferInsert)[] = [];
+  const [{ n: offerCount }] = await db.select({ n: count() }).from(offers);
+  if (offerCount === 0 && allClubs.length > 6) {
+    console.log("→ offers");
+    await db.insert(offers).values([
+      {
+        title: "Sponsor night: open bar till 11",
+        subtitle: "Tonight only",
+        description: "First hour is on the sponsor for anyone approved on tonight's list. Turn up before eleven and the tab is covered.",
+        image: allClubs[2].coverImage,
+        clubId: allClubs[2].id,
+        validTill: istNightWindow().to,
+        sortOrder: 0,
+      },
+      {
+        title: "Food & drinks on us",
+        subtitle: "Approved guestlist only",
+        description: "Get approved before 6 PM and your entry, starters and house drinks are covered for the night. Nothing to pay at the door.",
+        image: allClubs[0].coverImage,
+        sortOrder: 1,
+      },
+      {
+        title: "Girls go free, always",
+        subtitle: "Every night, every venue",
+        description: "No cover for girls on the SyncOut list. Bring your friends, the list takes up to five.",
+        image: allClubs[4].coverImage,
+        sortOrder: 2,
+      },
+      {
+        title: "Couples skip the queue",
+        subtitle: "Priority door till 11:30 PM",
+        description: "Approved couples walk past the line. Show your pass at the door and go straight in.",
+        image: allClubs[6].coverImage,
+        clubId: allClubs[6].id,
+        sortOrder: 3,
+      },
+    ]);
+  }
 
-  for (let day = 0; day < 14; day++) {
-    const date = nightAt(day);
-    const weekday = date.getUTCDay();
-    const tpl = EVENT_TEMPLATES.find((t) => t.weekday === weekday);
-    if (!tpl) continue;
-
-    // 5–8 venues host on any given night
-    const hosts = inserted.filter((_, i) => (i + day) % 3 === 0);
-
-    for (const club of hosts) {
-      const slug = slugify(`${club.slug}-${tpl.title}-${date.toISOString().slice(0, 10)}`);
-      rows.push({
-        clubId: club.id,
-        title: tpl.title,
-        slug,
-        description: `${tpl.title} at ${club.name}. ${club.tagline}. Doors ${club.openTime}, guestlist confirmed by 6 PM.`,
-        poster: club.coverImage,
-        gallery: club.gallery,
-        artist: tpl.artist,
-        musicType: tpl.musicType,
-        startsAt: date,
-        endsAt: new Date(date.getTime() + 4 * 3600e3),
-        guestlistOpen: true,
-        cutoffHour: 18,
-        femaleEnabled: true,
-        femaleLimit: 40,
-        femalePrice: 0,
-        coupleEnabled: true,
-        coupleLimit: 30,
-        couplePrice: 0,
-        maleEnabled: weekday !== 3, // guys' list shut on Ladies Night
-        maleLimit: 15,
-        malePrice: 0,
-        perks: tpl.perks,
-        isFeatured: club.isFeatured && day < 4,
-      });
+  if (args.has("--demo")) {
+    const [{ n }] = await db.select({ n: count() }).from(reviews);
+    if (n === 0 && allClubs.length > 4) {
+      console.log("→ demo reviews");
+      await db.insert(reviews).values([
+        { clubId: allClubs[0].id, authorName: "Demo review", rating: 5, body: "Sample review for local testing.", isApproved: true },
+      ]);
     }
   }
 
-  for (let i = 0; i < rows.length; i += 40) {
-    await db.insert(events).values(rows.slice(i, i + 40));
-  }
-  console.log(`   ${rows.length} nights`);
+  console.log("→ Navratri 2026 events, Dandiya popup, settings");
+  console.log(`   ${await seedNavratri()} new events`);
 
-  console.log("→ offers");
-  // Ends tonight, so the day-scoping is proven end to end.
-  const tonightEnds = new Date();
-  tonightEnds.setHours(30, 0, 0, 0);
-  const nextWeek = new Date(Date.now() + 7 * 864e5);
-
-  await db.insert(offers).values([
-    {
-      title: "Sponsor night: open bar till 11",
-      subtitle: "Tonight only",
-      description:
-        "First hour is on the sponsor for anyone approved on tonight's list. Turn up before eleven and the tab is covered.",
-      image: inserted[2].coverImage,
-      clubId: inserted[2].id,
-      validTill: tonightEnds,
-      isActive: true,
-      sortOrder: 0,
-    },
-    {
-      title: "Ladies night residency",
-      subtitle: "Every Wednesday this month",
-      description:
-        "A resident DJ for the month and no cover for girls on the list, at every venue running a Wednesday.",
-      image: inserted[6].coverImage,
-      clubId: null,
-      validTill: nextWeek,
-      isActive: true,
-      sortOrder: 2,
-    },
-    {
-      title: "Food & drinks on us",
-      subtitle: "Approved guestlist only",
-      description:
-        "Get approved before 6 PM and your entry, starters and house drinks are covered for the night. Nothing to pay at the door.",
-      image: inserted[0].coverImage,
-      clubId: null,
-      isActive: true,
-      sortOrder: 1,
-    },
-    {
-      title: "Girls go free, always",
-      subtitle: "Every night, every venue",
-      description: "No cover for girls on the SyncOut list. Bring your friends, the list takes up to four.",
-      image: inserted[4].coverImage,
-      clubId: inserted[4].id,
-      isActive: true,
-      sortOrder: 2,
-    },
-    {
-      title: "Couples skip the queue",
-      subtitle: "Priority door till 11:30 PM",
-      description: "Approved couples walk past the line. Show your pass at the door and go straight in.",
-      image: inserted[6].coverImage,
-      clubId: inserted[6].id,
-      isActive: true,
-      sortOrder: 3,
-    },
-  ]);
-
-  console.log("→ reviews");
-  await db.insert(reviews).values([
-    {
-      clubId: inserted[0].id,
-      authorName: "Sneha Sharma",
-      rating: 5,
-      body: "Vibrant room, brilliant drinks, and the crowd made the night. The list was confirmed by evening and the door knew our names.",
-      isApproved: true,
-    },
-    {
-      clubId: inserted[4].id,
-      authorName: "Rahul M.",
-      rating: 5,
-      body: "Applied at 4, approved at 5:40, walked in at 10 without paying a rupee. Food was actually good too.",
-      isApproved: true,
-    },
-    {
-      clubId: inserted[17].id,
-      authorName: "Ananya G.",
-      rating: 4,
-      body: "Went with three friends on the girls' list. Straight in, drinks sorted, no awkwardness at the door.",
-      isApproved: true,
-    },
-  ]);
-
-  console.log("✓ seeded");
+  console.log("✓ seeded — nothing existing was changed. A running site shows new events within 2 minutes.");
   process.exit(0);
 }
 

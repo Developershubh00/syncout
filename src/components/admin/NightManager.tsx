@@ -9,26 +9,23 @@ import { ImagePicker } from "@/components/admin/ImagePicker";
 import { Toggle } from "@/components/admin/ClubManager";
 import { useToast } from "@/components/ui/Toast";
 import { friendlyDate, fmtTime, slugify } from "@/lib/utils";
+import { toIstInput, fromIstInput, istTonightInput } from "@/lib/ist-input";
 
 type ClubOpt = { id: string; name: string; coverImage: string | null };
 type Row = {
   id: string; title: string; slug: string; poster: string | null; startsAt: string;
-  guestlistOpen: boolean; isActive: boolean; clubId: string; clubName: string;
+  guestlistOpen: boolean; isActive: boolean; isFeatured: boolean; clubId: string; clubName: string;
+  description: string | null; artist: string | null; musicType: string | null; cutoffHour: number;
   femaleLimit: number; coupleLimit: number; maleLimit: number;
+  femalePrice: number; couplePrice: number; malePrice: number;
   femaleEnabled: boolean; coupleEnabled: boolean; maleEnabled: boolean;
+  perks: string[];
 };
 
-/** datetime-local value for "today at 9 PM" */
-function defaultStart() {
-  const d = new Date();
-  d.setHours(21, 0, 0, 0);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T21:00`;
-}
 
 const BLANK = {
   clubId: "", title: "", slug: "", description: "", poster: "", artist: "",
-  musicType: "", startsAt: defaultStart(), cutoffHour: "18",
+  musicType: "", startsAt: istTonightInput(21), cutoffHour: "18",
   femaleEnabled: true, femaleLimit: "40", femalePrice: "0",
   coupleEnabled: true, coupleLimit: "30", couplePrice: "0",
   maleEnabled: true, maleLimit: "15", malePrice: "0",
@@ -53,17 +50,19 @@ export function NightManager({ clubs, initial }: { clubs: ClubOpt[]; initial: Ro
     setOpen(true);
   }
 
+  // Every field is loaded, because Save sends every field back — anything
+  // left at its blank default would overwrite the night's real value.
   function startEdit(r: Row) {
     setEditing(r);
-    const d = new Date(r.startsAt);
-    const pad = (n: number) => String(n).padStart(2, "0");
     setF({
-      ...BLANK,
       clubId: r.clubId, title: r.title, slug: r.slug, poster: r.poster ?? "",
-      startsAt: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`,
-      femaleEnabled: r.femaleEnabled, coupleEnabled: r.coupleEnabled, maleEnabled: r.maleEnabled,
-      femaleLimit: String(r.femaleLimit), coupleLimit: String(r.coupleLimit), maleLimit: String(r.maleLimit),
-      guestlistOpen: r.guestlistOpen, isActive: r.isActive,
+      description: r.description ?? "", artist: r.artist ?? "", musicType: r.musicType ?? "",
+      startsAt: toIstInput(r.startsAt), cutoffHour: String(r.cutoffHour),
+      femaleEnabled: r.femaleEnabled, femaleLimit: String(r.femaleLimit), femalePrice: String(r.femalePrice),
+      coupleEnabled: r.coupleEnabled, coupleLimit: String(r.coupleLimit), couplePrice: String(r.couplePrice),
+      maleEnabled: r.maleEnabled, maleLimit: String(r.maleLimit), malePrice: String(r.malePrice),
+      perks: r.perks.join(", "),
+      guestlistOpen: r.guestlistOpen, isFeatured: r.isFeatured, isActive: r.isActive,
     });
     setOpen(true);
   }
@@ -80,7 +79,7 @@ export function NightManager({ clubs, initial }: { clubs: ClubOpt[]; initial: Ro
         poster: f.poster || club?.coverImage || null,
         artist: f.artist || null,
         musicType: f.musicType || null,
-        startsAt: new Date(f.startsAt).toISOString(),
+        startsAt: fromIstInput(f.startsAt) ?? new Date().toISOString(),
         cutoffHour: Number(f.cutoffHour),
         femaleEnabled: f.femaleEnabled, femaleLimit: Number(f.femaleLimit), femalePrice: Number(f.femalePrice),
         coupleEnabled: f.coupleEnabled, coupleLimit: Number(f.coupleLimit), couplePrice: Number(f.couplePrice),
@@ -146,7 +145,7 @@ export function NightManager({ clubs, initial }: { clubs: ClubOpt[]; initial: Ro
             {clubs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </Select>
           <Input label="Title" placeholder="Saturday Mainroom" value={f.title} onChange={set("title")} />
-          <Input label="Starts" type="datetime-local" value={f.startsAt} onChange={set("startsAt")} />
+          <Input label="Starts (IST)" type="datetime-local" value={f.startsAt} onChange={set("startsAt")} />
           <div className="grid grid-cols-2 gap-3">
             <Input label="Artist" value={f.artist} onChange={set("artist")} />
             <Input label="Music" value={f.musicType} onChange={set("musicType")} />

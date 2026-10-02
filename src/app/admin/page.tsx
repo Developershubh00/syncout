@@ -4,11 +4,14 @@ import { AdminLogin } from "@/components/admin/AdminLogin";
 import { adminStats, adminBookings } from "@/lib/queries";
 import { friendlyDate, fmtTime } from "@/lib/utils";
 import { ArrowRight } from "lucide-react";
+import { dbHealth } from "@/db/health";
+import { SetupPanel } from "@/components/admin/SetupPanel";
 
 export default async function AdminHome() {
   if (!(await getAdmin())) return <AdminLogin />;
 
-  const [stats, pending] = await Promise.all([adminStats(), adminBookings("pending", 6)]);
+  const [stats, pending, health] = await Promise.all([adminStats(), adminBookings("pending", 6), dbHealth()]);
+  const needsSetup = !health.reachable || health.missing.length > 0 || health.upcomingEvents === 0 || health.upcomingNights === 0;
 
   return (
     <div className="px-4 pt-6 lg:px-0 lg:pt-8">
@@ -16,11 +19,15 @@ export default async function AdminHome() {
         Overview
       </h1>
 
+      {needsSetup && <SetupPanel health={health} />}
+
       <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
-        <Stat n={stats.pending} label="Awaiting review" accent />
+        <Stat n={stats.pending} label="Guestlist to review" accent href="/admin/bookings?status=pending" />
+        <Stat n={stats.toVerify} label="Payments to verify" accent href="/admin/orders?status=payment_submitted" />
+        <Stat n={`₹${stats.paidToday.toLocaleString("en-IN")}`} label="Confirmed today" href="/admin/orders?status=confirmed" />
         <Stat n={stats.tonight} label="Nights on tonight" />
-        <Stat n={stats.approved} label="Approved" />
-        <Stat n={stats.heads} label="Heads on lists" />
+        <Stat n={stats.approved} label="Approved tonight" />
+        <Stat n={stats.heads} label="Heads on tonight's lists" />
         <Stat n={stats.bookings} label="Total applications" />
         <Stat n={stats.upcoming} label="Upcoming nights" />
         <Stat n={stats.clubs} label="Venues" />
@@ -63,7 +70,8 @@ export default async function AdminHome() {
         <h2 className="text-[15px]">Daily rhythm</h2>
         <ol className="mt-2.5 space-y-2 text-[13px] leading-relaxed text-muted">
           <li>Applications come in through the day and sit in Guestlist as pending.</li>
-          <li>Work the list down before 6 PM — approving sends the guest their pass by email.</li>
+          <li>Work the list down before 6 PM — approving sends the guest their pass by email and a notification.</li>
+          <li>Event bookings: check the UPI payment against the screenshot on WhatsApp, then Confirm in Event bookings.</li>
           <li>At the venue, open Door and check codes off as people arrive.</li>
         </ol>
       </section>
@@ -71,11 +79,12 @@ export default async function AdminHome() {
   );
 }
 
-function Stat({ n, label, accent }: { n: number; label: string; accent?: boolean }) {
-  return (
-    <div className={"rounded-2xl border p-3.5 " + (accent ? "border-red/35 bg-red/[0.07]" : "border-line bg-surface")}>
+function Stat({ n, label, accent, href }: { n: number | string; label: string; accent?: boolean; href?: string }) {
+  const box = (
+    <div className={"h-full rounded-2xl border p-3.5 " + (accent ? "border-red/35 bg-red/[0.07]" : "border-line bg-surface")}>
       <p className={"font-display text-[26px] font-extrabold leading-none " + (accent ? "text-red-hot" : "")}>{n}</p>
       <p className="mt-1.5 text-[12px] text-muted">{label}</p>
     </div>
   );
+  return href ? <Link href={href}>{box}</Link> : box;
 }

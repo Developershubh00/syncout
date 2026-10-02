@@ -8,6 +8,13 @@
       "when": 1788962617449,
       "tag": "0000_powerful_tiger_shark",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790894175045,
+      "tag": "0001_v6_events_notifications",
+      "breakpoints": true
     }
   ]
 }

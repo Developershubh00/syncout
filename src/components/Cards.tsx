@@ -19,7 +19,7 @@ export function ClubCard({
 }) {
   return (
     <Link href={`/clubs/${club.slug}`} className={cn("group block", width)}>
-      <div className="relative aspect-[3/4] overflow-hidden rounded-[18px] bg-raised ring-0 ring-red/0 transition-all duration-300 lg:group-hover:-translate-y-1 lg:group-hover:ring-2 lg:group-hover:ring-red/60">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-[18px] bg-raised ring-0 ring-red/0 transition-all duration-300 lg:group-hover:ring-2 lg:group-hover:ring-red/60">
         <Image
           src={club.coverImage || FALLBACK}
           alt=""
@@ -64,7 +64,7 @@ export function NightCard({
   const d = new Date(ev.startsAt);
   return (
     <Link href={`/nights/${ev.slug}`} className={cn("group block", wide ? "w-full" : "w-[270px]")}>
-      <div className="relative aspect-[16/10] overflow-hidden rounded-[18px] bg-raised ring-0 ring-red/0 transition-all duration-300 lg:group-hover:-translate-y-1 lg:group-hover:ring-2 lg:group-hover:ring-red/60">
+      <div className="relative aspect-[16/10] overflow-hidden rounded-[18px] bg-raised ring-0 ring-red/0 transition-all duration-300 lg:group-hover:ring-2 lg:group-hover:ring-red/60">
         <Image
           src={ev.poster || FALLBACK}
           alt=""

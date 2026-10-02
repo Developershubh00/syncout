@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { RollingNumber } from "@/components/motion/RollingNumber";
 
 type Night = {
   slug: string;
@@ -28,7 +29,7 @@ function Unit({ value, label }: { value: number; label: string }) {
   return (
     <div className="min-w-[74px] rounded-xl border border-line bg-ink/60 px-3 py-2.5 text-center">
       <p className="font-display text-[26px] font-extrabold leading-none tabular-nums">
-        {String(value).padStart(2, "0")}
+        <RollingNumber value={value} />
       </p>
       <p className="mt-1 text-[11px] text-muted">{label}</p>
     </div>

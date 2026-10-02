@@ -7,12 +7,18 @@ import { AdminNav } from "@/components/admin/AdminNav";
 export const metadata = { title: "Admin" };
 export const dynamic = "force-dynamic";
 
-export const ADMIN_NAV = [
+const ADMIN_NAV = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/bookings", label: "Guestlist" },
+  { href: "/admin/orders", label: "Event bookings" },
   { href: "/admin/door", label: "Door" },
-  { href: "/admin/clubs", label: "Clubs" },
+  { href: "/admin/tevents", label: "Events" },
   { href: "/admin/nights", label: "Nights" },
+  { href: "/admin/clubs", label: "Clubs" },
+  { href: "/admin/announcements", label: "Popups & banners" },
+  { href: "/admin/notify", label: "Message guests" },
+  { href: "/admin/offers", label: "Offers" },
+  { href: "/admin/settings", label: "Settings" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

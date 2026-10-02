@@ -1,20 +1,52 @@
 import type { Metadata, Viewport } from "next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import localFont from "next/font/local";
+import { SITE } from "@/lib/site";
 import "./globals.css";
 
+// Self-hosted (same files Google served), preloaded from our own domain — no
+// render-blocking stylesheet from fonts.googleapis.com before text can paint.
+const sans = localFont({ src: "./fonts/inter-latin-wght.woff2", weight: "100 900", variable: "--font-inter", display: "swap" });
+const display = localFont({
+  src: "./fonts/bricolage-latin-opsz.woff2",
+  weight: "200 800",
+  variable: "--font-bricolage",
+  display: "swap",
+  fallback: ["ui-sans-serif", "system-ui", "sans-serif"],
+});
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE.url),
+  applicationName: SITE.name,
   title: {
-    default: "SyncOut — get on tonight's guestlist",
+    default: "SyncOut — Guestlists & Dandiya Nights in Delhi, Gurugram, Noida",
     template: "%s · SyncOut",
   },
-  description:
-    "Apply to the guestlist at Delhi NCR's best clubs before 6 PM. Approved means free entry, food and drinks on us.",
+  description: SITE.description,
+  keywords: [
+    "guestlist delhi", "club guestlist gurugram", "clubs in noida", "free entry clubs delhi", "nightlife delhi ncr",
+    "dandiya night 2026", "dandiya delhi", "dandiya gurugram", "dandiya noida", "garba night delhi", "navratri events 2026",
+  ],
+  category: "entertainment",
   manifest: "/manifest.json",
-  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "SyncOut" },
-  openGraph: {
-    title: "SyncOut — get on tonight's guestlist",
-    description: "Free entry, food and drinks at Delhi NCR's best clubs. Apply before 6 PM.",
-    type: "website",
+  alternates: { canonical: "/" },
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }, { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
   },
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "SyncOut" },
+  formatDetection: { telephone: false },
+  openGraph: {
+    type: "website",
+    siteName: SITE.name,
+    locale: SITE.locale,
+    title: "SyncOut — Guestlists & Dandiya Nights in Delhi NCR",
+    description: "Free entry on approved guestlists at Delhi NCR's best clubs, plus Dandiya & Garba passes for Navratri 2026.",
+    url: SITE.url,
+  },
+  twitter: { card: "summary_large_image", title: "SyncOut — Guestlists & Dandiya Nights in Delhi NCR", description: SITE.description },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
+  ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION ? { verification: { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } } : {}),
 };
 
 export const viewport: Viewport = {
@@ -27,16 +59,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body>{children}</body>
+    <html lang="en-IN" className={`${sans.variable} ${display.variable}`}>
+      <body>
+        {children}
+        <SpeedInsights />
+      </body>
     </html>
   );
 }
