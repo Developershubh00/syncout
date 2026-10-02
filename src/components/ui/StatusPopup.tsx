@@ -1,9 +1,9 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, X, Clock, PartyPopper } from "lucide-react";
+import { Check, X, Clock, PartyPopper, Megaphone } from "lucide-react";
 import { useEffect } from "react";
 
-export type PopupKind = "approved" | "rejected" | "waitlisted" | "submitted";
+export type PopupKind = "approved" | "rejected" | "waitlisted" | "submitted" | "info";
 
 export type PopupPayload = {
   kind: PopupKind;
@@ -18,6 +18,7 @@ const look: Record<PopupKind, { Icon: typeof Check; ring: string; tint: string }
   submitted: { Icon: Clock, ring: "var(--color-gold)", tint: "rgba(242,193,78,0.16)" },
   waitlisted: { Icon: Clock, ring: "var(--color-gold)", tint: "rgba(242,193,78,0.16)" },
   rejected: { Icon: X, ring: "var(--color-red)", tint: "rgba(228,17,60,0.16)" },
+  info: { Icon: Megaphone, ring: "var(--color-gold)", tint: "rgba(242,193,78,0.16)" },
 };
 
 export function StatusPopup({ data, onClose }: { data: PopupPayload | null; onClose: () => void }) {
@@ -129,6 +130,7 @@ export function StatusPopup({ data, onClose }: { data: PopupPayload | null; onCl
               {data.cta && (
                 <a
                   href={data.cta.href}
+                  onClick={onClose}
                   className="flex h-11 flex-1 items-center justify-center rounded-xl bg-red text-[14px] font-semibold text-white"
                 >
                   {data.cta.label}

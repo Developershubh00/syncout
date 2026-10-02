@@ -2,7 +2,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, MapPin, Clock, Music2, Check } from "lucide-react";
-import { getNight, getEventCounts } from "@/lib/queries";
+import { getEventCounts } from "@/lib/queries";
+import { cachedNight } from "@/lib/cache";
+import { ElegantBackground } from "@/components/fx/Backgrounds";
+import { JsonLd } from "@/components/JsonLd";
+import { absUrl } from "@/lib/site";
+import { cityName } from "@/lib/cities";
 import { guestlistWindow } from "@/lib/guestlist";
 import { getUser } from "@/lib/session";
 import { friendlyDate, fmtTime } from "@/lib/utils";
@@ -11,12 +16,17 @@ import { BookingFlow } from "@/components/BookingFlow";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
-  const n = await getNight((await params).slug);
-  return { title: n ? `${n.title} · ${n.clubName}` : "Night" };
+  const n = await cachedNight((await params).slug);
+  if (!n) return { title: "Night" };
+  return {
+    title: `${n.title} at ${n.clubName}, ${n.clubArea} — Guestlist ${friendlyDate(n.startsAt)}`,
+    description: `Get on the ${n.clubName} guestlist for ${n.title} (${friendlyDate(n.startsAt)}, ${fmtTime(n.startsAt)}). Apply before 6 PM on SyncOut — approved lists get free entry.`,
+    alternates: { canonical: `/nights/${n.slug}` },
+  };
 }
 
 export default async function NightPage({ params }: { params: Promise<{ slug: string }> }) {
-  const night = await getNight((await params).slug);
+  const night = await cachedNight((await params).slug);
   if (!night) notFound();
 
   const [counts, user] = await Promise.all([getEventCounts(night.id), getUser()]);
@@ -30,6 +40,38 @@ export default async function NightPage({ params }: { params: Promise<{ slug: st
 
   return (
     <>
+      <ElegantBackground />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Event",
+          name: `${night.title} at ${night.clubName}`,
+          description: night.description ?? undefined,
+          image: night.poster ? [night.poster] : undefined,
+          startDate: new Date(night.startsAt).toISOString(),
+          ...(night.endsAt ? { endDate: new Date(night.endsAt).toISOString() } : {}),
+          eventStatus: "https://schema.org/EventScheduled",
+          eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+          location: {
+            "@type": "NightClub",
+            name: night.clubName,
+            address: {
+              "@type": "PostalAddress",
+              streetAddress: night.clubAddress ?? night.clubArea,
+              addressLocality: cityName(night.clubCity),
+              addressCountry: "IN",
+            },
+          },
+          offers: {
+            "@type": "Offer",
+            name: "Guestlist",
+            price: night.femalePrice,
+            priceCurrency: "INR",
+            availability: win.open ? "https://schema.org/InStock" : "https://schema.org/SoldOut",
+            url: absUrl(`/nights/${night.slug}`),
+          },
+        }}
+      />
       <div className="relative aspect-[4/3] w-full">
         {night.poster && (
           <Image src={night.poster} alt="" fill priority sizes="512px" className="object-cover" />

@@ -2,26 +2,30 @@ import { TopBar } from "@/components/TopBar";
 import { ClubCard } from "@/components/Cards";
 import { cachedClubs } from "@/lib/cache";
 import { Empty } from "@/components/Empty";
+import { ElegantBackground } from "@/components/fx/Backgrounds";
+import { MotionCard } from "@/components/motion/Reveal";
+import { LIVE_CITIES, isLiveCity, DEFAULT_CITY } from "@/lib/cities";
 
-export const revalidate = 300;
-export const metadata = { title: "Clubs" };
+export const metadata = {
+  title: "Clubs in Delhi, Gurugram & Noida — Guestlist & Free Entry",
+  description: "Browse the best clubs and bars in Delhi NCR and get on the guestlist. Approved lists walk in free — apply before 6 PM.",
+  alternates: { canonical: "/clubs" },
+};
 
-const CITIES = [
-  { slug: "new-delhi", label: "Delhi" },
-  { slug: "gurugram", label: "Gurugram" },
-  { slug: "noida", label: "Noida" },
-];
+const CITIES = LIVE_CITIES.map((c) => ({ slug: c.slug, label: c.short }));
 
 export default async function ClubsPage({
   searchParams,
 }: {
   searchParams: Promise<{ city?: string }>;
 }) {
-  const { city = "new-delhi" } = await searchParams;
+  const { city: raw } = await searchParams;
+  const city = raw && isLiveCity(raw) ? raw : DEFAULT_CITY;
   const list = await cachedClubs(city, 80);
 
   return (
     <>
+      <ElegantBackground />
       <TopBar city={city} />
 
       <header className="px-4 pb-1 pt-5">
@@ -31,14 +35,14 @@ export default async function ClubsPage({
         </p>
       </header>
 
-      <div className="rail py-3.5">
+      <div className="rail chips py-3.5">
         {CITIES.map((c) => (
           <a
             key={c.slug}
             href={`/clubs?city=${c.slug}`}
             className={
               "rounded-full border px-3.5 py-1.5 text-[13px] font-medium " +
-              (c.slug === city ? "border-red bg-red/12 text-red-hot" : "border-line text-muted")
+              (c.slug === city ? "border-red bg-red/12 text-red-hot shadow-[0_6px_22px_-10px_rgba(228,17,60,.8)]" : "border-line text-muted transition-colors hover:text-text")
             }
           >
             {c.label}
@@ -48,8 +52,10 @@ export default async function ClubsPage({
 
       {list.length ? (
         <div className="grid grid-cols-2 gap-3 px-4 pb-4 lg:grid-cols-4 lg:gap-5 lg:px-0 xl:grid-cols-5">
-          {list.map((c) => (
-            <ClubCard key={c.id} club={c} width="w-full" />
+          {list.map((c, i) => (
+            <MotionCard key={c.id} index={i} columns={4}>
+              <ClubCard club={c} width="w-full" />
+            </MotionCard>
           ))}
         </div>
       ) : (

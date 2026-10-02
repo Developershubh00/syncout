@@ -3,82 +3,54 @@ import { db } from "@/db";
 import { bookings, events, clubs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getAdmin } from "@/lib/session";
-import { sendMail, guestlistApprovedEmail, guestlistRejectedEmail } from "@/lib/mail";
-import { friendlyDate } from "@/lib/utils";
-
-const ALLOWED = ["pending", "approved", "rejected", "waitlisted", "checked_in", "no_show", "cancelled"] as const;
-type Status = (typeof ALLOWED)[number];
+import { adminBookingPatchSchema } from "@/lib/validators";
+import { readJson, fail } from "@/lib/api";
+import { announceGuestlistDecision } from "@/lib/decisions";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await getAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const admin = await getAdmin();
+  if (!admin) return fail("Unauthorized", 401);
 
   const { id } = await params;
-  const body = (await req.json().catch(() => ({}))) as { status?: Status; reason?: string };
-  if (!body.status || !ALLOWED.includes(body.status))
-    return NextResponse.json({ error: "Unknown status" }, { status: 422 });
+  const parsed = adminBookingPatchSchema.safeParse(await readJson(req));
+  if (!parsed.success) return fail("Unknown status", 422);
+  const { status, reason } = parsed.data;
 
   const [row] = await db
-    .select({
-      b: bookings,
-      eventTitle: events.title,
-      startsAt: events.startsAt,
-      clubName: clubs.name,
-    })
+    .select({ b: bookings, eventTitle: events.title, startsAt: events.startsAt, clubName: clubs.name })
     .from(bookings)
     .innerJoin(events, eq(bookings.eventId, events.id))
     .innerJoin(clubs, eq(bookings.clubId, clubs.id))
     .where(eq(bookings.id, id))
     .limit(1);
+  if (!row) return fail("Booking not found", 404);
 
-  if (!row) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
-
+  const finalReason = status === "rejected" ? reason || "The list filled up for this night." : null;
   await db
     .update(bookings)
     .set({
-      status: body.status,
-      rejectionReason: body.status === "rejected" ? body.reason ?? null : null,
+      status,
+      rejectionReason: finalReason,
       reviewedAt: new Date(),
-      reviewedBy: "admin",
-      checkedInAt: body.status === "checked_in" ? new Date() : row.b.checkedInAt,
+      reviewedBy: admin.via === "key" ? "admin (key)" : "admin",
+      checkedInAt: status === "checked_in" ? new Date() : row.b.checkedInAt,
     })
     .where(eq(bookings.id, id));
 
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "";
-
-  if (body.status === "approved") {
-    await sendMail({
-      to: row.b.guestEmail,
-      subject: `You're on the list — ${row.eventTitle}`,
-      html: guestlistApprovedEmail({
-        name: row.b.guestName,
-        event: row.eventTitle,
-        club: row.clubName,
-        date: friendlyDate(row.startsAt),
-        code: row.b.code,
-        guests: row.b.totalGuests,
-        url: `${base}/passes/${row.b.code}`,
-      }),
-    });
-    await db.update(bookings).set({ emailSentAt: new Date() }).where(eq(bookings.id, id));
-  }
-
-  if (body.status === "rejected") {
-    await sendMail({
-      to: row.b.guestEmail,
-      subject: `Guestlist update — ${row.eventTitle}`,
-      html: guestlistRejectedEmail({
-        name: row.b.guestName,
-        event: row.eventTitle,
-        reason: body.reason,
-      }),
-    });
+  // Only tell the guest when something actually changed.
+  if (status !== row.b.status) {
+    await announceGuestlistDecision(
+      [{ ...row.b, eventTitle: row.eventTitle, startsAt: row.startsAt, clubName: row.clubName }],
+      status,
+      finalReason
+    );
   }
 
   return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await getAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await getAdmin())) return fail("Unauthorized", 401);
   await db.delete(bookings).where(eq(bookings.id, (await params).id));
   return NextResponse.json({ ok: true });
 }

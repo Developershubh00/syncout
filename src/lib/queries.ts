@@ -1,7 +1,8 @@
 import "server-only";
 import { db } from "@/db";
-import { clubs, events, offers, bookings, reviews } from "@/db/schema";
-import { and, asc, desc, eq, gte, sql, ilike, or, count } from "drizzle-orm";
+import { clubs, events, offers, bookings, reviews, ticketOrders } from "@/db/schema";
+import { and, asc, desc, eq, gte, lt, sql, ilike, or, count, inArray } from "drizzle-orm";
+import { istNightWindow, istDayStart } from "./guestlist";
 
 const now = () => new Date();
 
@@ -14,6 +15,7 @@ const now = () => new Date();
    ──────────────────────────────────────────────────────────────── */
 
 let warnedNoUrl = false;
+let warnedSchema = false;
 
 function report(err: unknown, label: string) {
   if (!process.env.DATABASE_URL) {
@@ -26,10 +28,22 @@ function report(err: unknown, label: string) {
     }
     return;
   }
+  const e = err as { message?: string; code?: string; cause?: { message?: string; code?: string } };
+  const text = `${e?.message ?? ""} ${e?.cause?.message ?? ""}`;
+  if (e?.code === "42P01" || e?.cause?.code === "42P01" || /relation "[^"]+" does not exist/.test(text)) {
+    if (!warnedSchema) {
+      warnedSchema = true;
+      console.warn(
+        "\n[syncout] The database is missing tables, so some lists will look empty.\n" +
+          "          Run: npm run db:upgrade && npm run db:seed   (or Admin → Overview → Set up)\n"
+      );
+    }
+    return;
+  }
   console.error(`[syncout] query failed (${label}) —`, err);
 }
 
-function safe<A extends unknown[], R>(fn: (...args: A) => Promise<R>, fallback: R) {
+export function safe<A extends unknown[], R>(fn: (...args: A) => Promise<R>, fallback: R) {
   return async (...args: A): Promise<R> => {
     try {
       return await fn(...args);
@@ -52,7 +66,11 @@ async function _getClubs(citySlug?: string, limit = 60) {
 }
 
 async function _getClub(slug: string) {
-  const [row] = await db.select().from(clubs).where(eq(clubs.slug, slug)).limit(1);
+  const [row] = await db
+    .select()
+    .from(clubs)
+    .where(and(eq(clubs.slug, slug), eq(clubs.isActive, true)))
+    .limit(1);
   return row ?? null;
 }
 
@@ -115,7 +133,7 @@ async function _getNight(slug: string) {
     .select(joined)
     .from(events)
     .innerJoin(clubs, eq(events.clubId, clubs.id))
-    .where(eq(events.slug, slug))
+    .where(and(eq(events.slug, slug), eq(events.isActive, true), eq(clubs.isActive, true)))
     .limit(1);
   return row ?? null;
 }
@@ -174,7 +192,7 @@ async function _getEventCounts(eventId: string) {
 }
 
 async function _searchAll(q: string, citySlug?: string) {
-  const term = `%${q}%`;
+  const term = `%${q.replace(/[\\%_]/g, (c) => "\\" + c)}%`;
   const clubHits = await db
     .select()
     .from(clubs)
@@ -237,6 +255,9 @@ async function _getBookingByCode(code: string) {
     .select({
       id: bookings.id,
       code: bookings.code,
+      userId: bookings.userId,
+      eventId: bookings.eventId,
+      clubSlug: clubs.slug,
       status: bookings.status,
       entryType: bookings.entryType,
       totalGuests: bookings.totalGuests,
@@ -273,41 +294,75 @@ async function _getBookingByCode(code: string) {
 
 async function _adminStats() {
   const at = now();
-  // Tonight = from now until 6am tomorrow, so a 1am booking still counts.
-  const dayEnd = new Date(at);
-  dayEnd.setHours(30, 0, 0, 0);
+  const { from, to } = istNightWindow(at);
+  const dayStart = istDayStart(at);
+  const tonight = and(gte(events.startsAt, from), lt(events.startsAt, to));
+  const live = or(eq(bookings.status, "approved"), eq(bookings.status, "checked_in"));
 
-  const [[b], [pending], [c], [e], [tonight], [approvedTonight], [heads]] = await Promise.all([
-    db.select({ n: count() }).from(bookings),
-    db.select({ n: count() }).from(bookings).where(eq(bookings.status, "pending")),
-    db.select({ n: count() }).from(clubs),
-    db.select({ n: count() }).from(events).where(gte(events.startsAt, at)),
-    db
-      .select({ n: count() })
-      .from(events)
-      .where(and(gte(events.startsAt, at), sql`${events.startsAt} < ${dayEnd}`)),
-    db
-      .select({ n: count() })
-      .from(bookings)
-      .where(eq(bookings.status, "approved")),
-    db
-      .select({ n: sql<number>`coalesce(sum(${bookings.totalGuests}), 0)::int` })
-      .from(bookings)
-      .where(eq(bookings.status, "approved")),
-  ]);
+  const [[b], [pending], [c], [e], [nightsTonight], [approvedTonight], [headsTonight], [toVerify], [paidToday]] =
+    await Promise.all([
+      db.select({ n: count() }).from(bookings),
+      db.select({ n: count() }).from(bookings).where(eq(bookings.status, "pending")),
+      db.select({ n: count() }).from(clubs),
+      db.select({ n: count() }).from(events).where(gte(events.startsAt, at)),
+      db.select({ n: count() }).from(events).where(tonight),
+      db
+        .select({ n: count() })
+        .from(bookings)
+        .innerJoin(events, eq(bookings.eventId, events.id))
+        .where(and(live, tonight)),
+      db
+        .select({ n: sql<number>`coalesce(sum(${bookings.totalGuests}), 0)::int` })
+        .from(bookings)
+        .innerJoin(events, eq(bookings.eventId, events.id))
+        .where(and(live, tonight)),
+      db.select({ n: count() }).from(ticketOrders).where(eq(ticketOrders.status, "payment_submitted")),
+      db
+        .select({ n: sql<number>`coalesce(sum(${ticketOrders.amount}), 0)::int` })
+        .from(ticketOrders)
+        .where(
+          and(
+            inArray(ticketOrders.status, ["confirmed", "checked_in"]),
+            gte(ticketOrders.confirmedAt, dayStart)
+          )
+        ),
+    ]);
 
   return {
     bookings: b.n,
     pending: pending.n,
     clubs: c.n,
     upcoming: e.n,
-    tonight: tonight.n,
+    tonight: nightsTonight.n,
     approved: approvedTonight.n,
-    heads: heads.n,
+    heads: Number(headsTonight.n),
+    toVerify: toVerify.n,
+    paidToday: Number(paidToday.n),
   };
 }
 
-async function _adminBookings(status?: string, limit = 200) {
+/** Upcoming nights with their pending count, for the guestlist filter. */
+async function _adminNightOptions() {
+  return db
+    .select({
+      id: events.id,
+      title: events.title,
+      startsAt: events.startsAt,
+      clubName: clubs.name,
+      pending: sql<number>`count(${bookings.id}) filter (where ${bookings.status} = 'pending')`.mapWith(Number),
+      total: sql<number>`count(${bookings.id})`.mapWith(Number),
+    })
+    .from(events)
+    .innerJoin(clubs, eq(events.clubId, clubs.id))
+    .leftJoin(bookings, eq(bookings.eventId, events.id))
+    .where(gte(events.startsAt, new Date(now().getTime() - 12 * 3600e3)))
+    .groupBy(events.id, clubs.name)
+    .having(sql`count(${bookings.id}) > 0`)
+    .orderBy(asc(events.startsAt))
+    .limit(120);
+}
+
+async function _adminBookings(status?: string, limit = 200, eventId?: string) {
   return db
     .select({
       id: bookings.id,
@@ -328,11 +383,17 @@ async function _adminBookings(status?: string, limit = 200) {
       eventTitle: events.title,
       startsAt: events.startsAt,
       clubName: clubs.name,
+      eventId: bookings.eventId,
     })
     .from(bookings)
     .innerJoin(events, eq(bookings.eventId, events.id))
     .innerJoin(clubs, eq(bookings.clubId, clubs.id))
-    .where(status && status !== "all" ? eq(bookings.status, status as "pending") : undefined)
+    .where(
+      and(
+        status && status !== "all" ? eq(bookings.status, status as "pending") : undefined,
+        eventId ? eq(bookings.eventId, eventId) : undefined
+      )
+    )
     .orderBy(desc(bookings.createdAt))
     .limit(limit);
 }
@@ -361,5 +422,17 @@ export const adminStats = safe(_adminStats, {
   tonight: 0,
   approved: 0,
   heads: 0,
+  toVerify: 0,
+  paidToday: 0,
 });
 export const adminBookings = safe(_adminBookings, []);
+export const adminNightOptions = safe(_adminNightOptions, []);
+
+/** Unwrapped versions, for the cache layer — failures must throw there, not be cached as empty. */
+export const raw = {
+  getClubs: _getClubs,
+  getClub: _getClub,
+  getNights: _getNights,
+  getNight: _getNight,
+  getOffers: _getOffers,
+};

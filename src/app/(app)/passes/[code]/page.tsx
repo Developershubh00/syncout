@@ -4,9 +4,12 @@ import { ChevronLeft, MapPin, Clock, Check, Hourglass, XCircle, Shirt } from "lu
 import { getBookingByCode } from "@/lib/queries";
 import { friendlyDate, fmtTime } from "@/lib/utils";
 import { cutoffFor } from "@/lib/guestlist";
+import { getAdmin, getUser } from "@/lib/session";
+import { hasAccess } from "@/lib/access";
+import { Lock } from "lucide-react";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Your pass" };
+export const metadata = { title: "Your pass", robots: { index: false, follow: false } };
 
 const LOOK = {
   pending: { label: "Waiting on approval", tone: "text-muted", Icon: Hourglass, ring: "border-line" },
@@ -18,10 +21,38 @@ const LOOK = {
   cancelled: { label: "Cancelled", tone: "text-muted", Icon: XCircle, ring: "border-line" },
 } as const;
 
-export default async function PassPage({ params }: { params: Promise<{ code: string }> }) {
-  const { code } = await params;
+export default async function PassPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ code: string }>;
+  searchParams: Promise<{ k?: string }>;
+}) {
+  const [{ code }, { k }] = await Promise.all([params, searchParams]);
   const b = await getBookingByCode(code.toUpperCase());
   if (!b) notFound();
+
+  // The code is what the door types, so it can't be the only key to a guest's
+  // name and email: owner, admin, or the signed link from their email.
+  const [user, admin] = await Promise.all([getUser(), getAdmin()]);
+  const allowed = Boolean(admin) || (b.userId && user?.id === b.userId) || hasAccess("pass", b.code, k);
+  if (!allowed) {
+    return (
+      <div className="px-4 pt-6">
+        <div className="rounded-[22px] border border-line bg-surface p-5">
+          <p className="flex items-center gap-2 text-[14px] font-semibold">
+            <Lock className="size-4 text-faint" /> This pass is private
+          </p>
+          <p className="mt-2 text-[13px] leading-relaxed text-muted">
+            Open it from the link in your email, or log in with the account you applied with.
+          </p>
+          <Link href={`/nights/${b.eventSlug}`} className="mt-4 flex h-11 items-center justify-center rounded-xl bg-raised text-[13.5px] font-semibold">
+            View {b.eventTitle}
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const look = LOOK[b.status];
   const cutoff = cutoffFor(new Date(b.startsAt), b.cutoffHour);

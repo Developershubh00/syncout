@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { RollingNumber } from "@/components/motion/RollingNumber";
 import { ArrowRight } from "lucide-react";
 
 /** Milliseconds until the next 6 PM IST. */
@@ -32,7 +33,6 @@ export function CutoffBanner() {
     return () => clearInterval(id);
   }, []);
 
-  const pad = (n: number) => String(n).padStart(2, "0");
 
   return (
     <section className="px-4 pt-5">
@@ -64,11 +64,11 @@ export function CutoffBanner() {
         {state && (
           <div className="mt-4 flex items-center gap-2.5">
             <div className="flex items-baseline gap-1 rounded-xl border border-line bg-raised px-3 py-2 font-display text-[19px] font-bold tabular-nums">
-              {pad(state.h)}<span className="text-[13px] text-faint">h</span>
+              <RollingNumber value={state.h} /><span className="text-[13px] text-faint">h</span>
               <span className="mx-0.5 text-faint">:</span>
-              {pad(state.m)}<span className="text-[13px] text-faint">m</span>
+              <RollingNumber value={state.m} /><span className="text-[13px] text-faint">m</span>
               <span className="mx-0.5 text-faint">:</span>
-              {pad(state.s)}<span className="text-[13px] text-faint">s</span>
+              <RollingNumber value={state.s} /><span className="text-[13px] text-faint">s</span>
             </div>
             <span className="text-[12px] leading-tight text-muted">
               {state.passed ? "until tomorrow's\nlist opens" : "left to make\ntonight's list"}
@@ -78,8 +78,9 @@ export function CutoffBanner() {
 
         <Link
           href="/nights"
-          className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-red text-[15px] font-semibold transition-transform active:scale-[0.98]"
+          className="group relative mt-5 flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-red text-[15px] font-semibold transition-transform active:scale-[0.98]"
         >
+          <span aria-hidden className="cta-shine" />
           See tonight&apos;s nights
           <ArrowRight className="size-4" />
         </Link>

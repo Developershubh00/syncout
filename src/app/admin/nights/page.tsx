@@ -13,13 +13,7 @@ export default async function AdminNights() {
   const [clubList, rows] = await Promise.all([
     db.select({ id: clubs.id, name: clubs.name, coverImage: clubs.coverImage }).from(clubs),
     db
-      .select({
-        id: events.id, title: events.title, slug: events.slug, poster: events.poster,
-        startsAt: events.startsAt, guestlistOpen: events.guestlistOpen, isActive: events.isActive,
-        femaleLimit: events.femaleLimit, coupleLimit: events.coupleLimit, maleLimit: events.maleLimit,
-        femaleEnabled: events.femaleEnabled, coupleEnabled: events.coupleEnabled, maleEnabled: events.maleEnabled,
-        clubId: events.clubId, clubName: clubs.name,
-      })
+      .select({ ev: events, clubName: clubs.name })
       .from(events)
       .innerJoin(clubs, eq(events.clubId, clubs.id))
       .where(gte(events.startsAt, new Date(Date.now() - 7 * 864e5)))
@@ -30,7 +24,7 @@ export default async function AdminNights() {
   return (
     <NightManager
       clubs={clubList}
-      initial={rows.map((r) => ({ ...r, startsAt: String(r.startsAt) }))}
+      initial={rows.map(({ ev, clubName }) => ({ ...ev, clubName, startsAt: new Date(ev.startsAt).toISOString() }))}
     />
   );
 }

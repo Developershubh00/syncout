@@ -2,7 +2,9 @@ import Link from "next/link";
 import { getUser } from "@/lib/session";
 import { getUserBookings } from "@/lib/queries";
 import { LogoutButton } from "@/components/LogoutButton";
-import { ChevronRight, Ticket, Disc3, ShieldCheck, LifeBuoy } from "lucide-react";
+import { ChevronRight, Ticket, Disc3, LifeBuoy, Sparkles, Bell } from "lucide-react";
+import { InstallButton } from "@/components/pwa/InstallButton";
+import { PushToggle } from "@/components/pwa/PushToggle";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "You" };
@@ -51,10 +53,15 @@ export default async function ProfilePage() {
 
       <nav className="px-4">
         <ul className="divide-y divide-line overflow-hidden rounded-[18px] border border-line bg-surface">
-          <Item href="/passes" icon={<Ticket className="size-[18px]" />}>Your passes</Item>
+          <Item href="/passes" icon={<Ticket className="size-[18px]" />}>Passes &amp; tickets</Item>
+          <Item href="/events" icon={<Sparkles className="size-[18px]" />}>Events &amp; Dandiya</Item>
+          {user && <Item href="/notifications" icon={<Bell className="size-[18px]" />}>Notifications</Item>}
           <Item href="/clubs" icon={<Disc3 className="size-[18px]" />}>Browse clubs</Item>
-          <Item href="/admin" icon={<ShieldCheck className="size-[18px]" />}>Admin panel</Item>
           <Item href="mailto:hello@syncout.in" icon={<LifeBuoy className="size-[18px]" />}>Get help</Item>
+        </ul>
+        <ul className="mt-3 divide-y divide-line overflow-hidden rounded-[18px] border border-line bg-surface empty:hidden">
+          <li className="empty:hidden"><InstallButton /></li>
+          {user && <li className="empty:hidden"><PushToggle /></li>}
         </ul>
       </nav>
 

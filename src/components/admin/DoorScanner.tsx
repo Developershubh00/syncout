@@ -6,11 +6,20 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 
 type Result = {
-  code: string; status: string; guestName: string; totalGuests: number;
-  femaleCount: number; maleCount: number; eventTitle: string; clubName: string;
-  id: string; guestPhone: string;
+  kind: "pass" | "ticket";
+  id: string;
+  code: string;
+  status: string;
+  ok: boolean;
+  guestName: string;
+  guestPhone: string;
+  totalGuests: number;
+  detail: string;
+  eventTitle: string;
+  clubName: string;
 } | null;
 
+/** Guestlist passes (6 characters) and event tickets (7, starting with T). */
 export function DoorScanner() {
   const toast = useToast();
   const [code, setCode] = useState("");
@@ -26,7 +35,11 @@ export function DoorScanner() {
     setMiss(false);
     try {
       const r = await fetch(`/api/door/${c}`);
-      if (r.status === 404) { setRes(null); setMiss(true); return; }
+      if (r.status === 404) {
+        setRes(null);
+        setMiss(true);
+        return;
+      }
       setRes(await r.json());
     } finally {
       setBusy(false);
@@ -37,11 +50,8 @@ export function DoorScanner() {
     if (!res) return;
     setBusy(true);
     try {
-      const r = await fetch(`/api/admin/bookings/${res.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "checked_in" }),
-      });
+      const url = res.kind === "ticket" ? `/api/admin/orders/${res.id}` : `/api/admin/bookings/${res.id}`;
+      const r = await fetch(url, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "checked_in" }) });
       if (!r.ok) throw new Error("Check-in failed");
       setRes({ ...res, status: "checked_in" });
       toast(`${res.guestName} checked in`);
@@ -51,8 +61,6 @@ export function DoorScanner() {
       setBusy(false);
     }
   }
-
-  const ok = res?.status === "approved" || res?.status === "checked_in";
 
   return (
     <div className="mt-5">
@@ -72,45 +80,40 @@ export function DoorScanner() {
 
       <AnimatePresence mode="wait">
         {miss && (
-          <motion.p
-            key="miss"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="mt-5 rounded-2xl border border-line bg-surface px-4 py-6 text-center text-[14px] text-muted"
-          >
-            No pass with that code.
+          <motion.p key="miss" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5 rounded-2xl border border-line bg-surface px-4 py-6 text-center text-[14px] text-muted">
+            No pass or ticket with that code.
           </motion.p>
         )}
-
         {res && (
           <motion.div
-            key={res.code + res.status}
-            initial={{ opacity: 0, y: 10, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
+            key={res.code}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ type: "spring", damping: 28, stiffness: 380 }}
-            className={
-              "mt-5 rounded-[22px] border p-5 " +
-              (ok ? "border-gold/45 bg-gold/[0.07]" : "border-red/40 bg-red/[0.07]")
-            }
+            className={`mt-5 overflow-hidden rounded-[22px] border ${res.ok ? "border-gold/45 bg-gold/[0.06]" : "border-red/40 bg-red/[0.06]"}`}
           >
-            <div className={"flex items-center gap-2 text-[13px] font-semibold " + (ok ? "text-gold" : "text-red-hot")}>
-              {ok ? <Check className="size-4" /> : <X className="size-4" />}
-              {res.status === "checked_in" ? "Already checked in" : ok ? "On the list" : `Not approved — ${res.status}`}
+            <div className="p-5">
+              <div className="flex items-center justify-between">
+                <span className={`flex items-center gap-1.5 text-[13px] font-semibold ${res.ok ? "text-gold" : "text-red-hot"}`}>
+                  {res.ok ? <Check className="size-4" /> : <X className="size-4" />}
+                  {res.status === "checked_in" ? "Already checked in" : res.ok ? (res.kind === "ticket" ? "Paid ticket — let them in" : "On the list") : res.status.replace("_", " ")}
+                </span>
+                <span className="rounded-md bg-raised px-1.5 py-0.5 text-[11px] font-semibold text-muted">{res.kind === "ticket" ? "Event ticket" : "Guestlist"}</span>
+              </div>
+              <p className="mt-3 font-display text-[26px] font-extrabold leading-tight">{res.guestName}</p>
+              <p className="mt-1 text-[13.5px] text-muted">
+                {res.totalGuests} {res.totalGuests === 1 ? "person" : "people"} · {res.detail}
+              </p>
+              <p className="mt-1 text-[12.5px] text-faint">
+                {res.eventTitle} · {res.clubName} · {res.guestPhone}
+              </p>
             </div>
-
-            <p className="mt-2.5 font-display text-[24px] font-extrabold tracking-tight">{res.guestName}</p>
-            <p className="mt-1 text-[13px] text-muted">
-              {res.totalGuests} guest{res.totalGuests > 1 ? "s" : ""} ({res.femaleCount}F / {res.maleCount}M) ·{" "}
-              {res.guestPhone}
-            </p>
-            <p className="mt-0.5 text-[12.5px] text-faint">{res.eventTitle} · {res.clubName}</p>
-
-            {res.status === "approved" && (
-              <Button size="lg" full className="mt-4" variant="gold" loading={busy} onClick={checkIn}>
-                Check in {res.totalGuests} guest{res.totalGuests > 1 ? "s" : ""}
-              </Button>
+            {res.ok && res.status !== "checked_in" && (
+              <div className="border-t border-line p-3">
+                <Button full size="lg" variant="gold" loading={busy} onClick={checkIn}>
+                  Check in {res.totalGuests > 1 ? `all ${res.totalGuests}` : ""}
+                </Button>
+              </div>
             )}
           </motion.div>
         )}

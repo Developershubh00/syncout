@@ -217,6 +217,199 @@ export const favorites = pgTable(
   (t) => ({ uniq: uniqueIndex("fav_user_club_idx").on(t.userId, t.clubId) })
 );
 
+/* ════════════════════════════════════════════════════════════════
+   v6 — ticketed events, announcements, notifications, settings.
+
+   New things use text columns (validated in code) rather than pg enums,
+   so later patches can add a value without an ALTER TYPE migration.
+   ════════════════════════════════════════════════════════════════ */
+
+export type BookingMode = "upi" | "whatsapp" | "external" | "free";
+export type OrderStatus =
+  | "awaiting_payment"
+  | "payment_submitted"
+  | "confirmed"
+  | "rejected"
+  | "cancelled"
+  | "refunded"
+  | "checked_in";
+
+/* ── ticketed events (Dandiya, concerts, festivals…) ────── */
+
+export const ticketedEvents = pgTable(
+  "ticketed_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    category: text("category").notNull().default("dandiya"),
+    citySlug: text("city_slug").notNull().default("new-delhi"),
+    venueName: text("venue_name").notNull(),
+    area: text("area"),
+    address: text("address"),
+    mapUrl: text("map_url"),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    /** IST calendar days the event runs (YYYY-MM-DD). Empty = the day of startsAt. */
+    days: jsonb("days").$type<string[]>().default([]).notNull(),
+    /** Shown instead of a clock time, e.g. "Multiple slots". */
+    timeLabel: text("time_label"),
+    poster: text("poster"),
+    gallery: jsonb("gallery").$type<string[]>().default([]).notNull(),
+    description: text("description"),
+    highlights: jsonb("highlights").$type<string[]>().default([]).notNull(),
+    organizer: text("organizer"),
+    ageLimit: text("age_limit"),
+    dressCode: text("dress_code"),
+    terms: text("terms"),
+    bookingMode: text("booking_mode").$type<BookingMode>().default("upi").notNull(),
+    externalUrl: text("external_url"),
+    /** Where the listing came from — admin reference only, never shown. */
+    sourceUrl: text("source_url"),
+    salesOpen: boolean("sales_open").default(true).notNull(),
+    isFeatured: boolean("is_featured").default(false).notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    cityIdx: index("tev_city_idx").on(t.citySlug),
+    startsIdx: index("tev_starts_idx").on(t.startsAt),
+  })
+);
+
+export const ticketTiers = pgTable(
+  "ticket_tiers",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    eventId: uuid("event_id")
+      .references(() => ticketedEvents.id, { onDelete: "cascade" })
+      .notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    price: integer("price").default(0).notNull(),
+    /** People one ticket lets in — 2 for a couple pass. */
+    admits: integer("admits").default(1).notNull(),
+    /** Tickets available. Null = no cap. */
+    capacity: integer("capacity"),
+    perOrderMax: integer("per_order_max").default(10).notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+  },
+  (t) => ({ eventIdx: index("tiers_event_idx").on(t.eventId) })
+);
+
+export const ticketOrders = pgTable(
+  "ticket_orders",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    code: text("code").notNull().unique(),
+    eventId: uuid("event_id")
+      .references(() => ticketedEvents.id, { onDelete: "cascade" })
+      .notNull(),
+    tierId: uuid("tier_id").references(() => ticketTiers.id, { onDelete: "set null" }),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    day: text("day"),
+    tierName: text("tier_name").default("").notNull(),
+    quantity: integer("quantity").default(1).notNull(),
+    admits: integer("admits").default(1).notNull(),
+    unitPrice: integer("unit_price").default(0).notNull(),
+    amount: integer("amount").default(0).notNull(),
+    name: text("name").notNull(),
+    phone: text("phone").notNull(),
+    email: text("email").notNull(),
+    status: text("status").$type<OrderStatus>().default("awaiting_payment").notNull(),
+    mode: text("mode").$type<BookingMode>().default("upi").notNull(),
+    utr: text("utr"),
+    note: text("note"),
+    adminNote: text("admin_note"),
+    whatsappAt: timestamp("whatsapp_at", { withTimezone: true }),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    checkedInAt: timestamp("checked_in_at", { withTimezone: true }),
+    reviewedBy: text("reviewed_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    eventIdx: index("orders_event_idx").on(t.eventId),
+    userIdx: index("orders_user_idx").on(t.userId),
+    statusIdx: index("orders_status_idx").on(t.status),
+  })
+);
+
+/* ── announcements (popups / banners managed in admin) ──── */
+
+export const announcements = pgTable("announcements", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  /** Stable key for seeded announcements so the seeder stays idempotent. */
+  slug: text("slug").unique(),
+  title: text("title").notNull(),
+  body: text("body"),
+  image: text("image"),
+  ctaLabel: text("cta_label"),
+  ctaUrl: text("cta_url"),
+  kind: text("kind").$type<"popup" | "banner">().default("popup").notNull(),
+  audience: text("audience").$type<"everyone" | "signed_in" | "signed_out">().default("everyone").notNull(),
+  theme: text("theme").$type<"festive" | "elegant">().default("festive").notNull(),
+  /** City links shown as chips in the popup, e.g. ["new-delhi","gurugram","noida"]. */
+  cities: jsonb("cities").$type<string[]>().default([]).notNull(),
+  startsAt: timestamp("starts_at", { withTimezone: true }),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
+  isActive: boolean("is_active").default(true).notNull(),
+  priority: integer("priority").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/* ── in-app notifications + web push ─────────────────────── */
+
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    kind: text("kind").default("info").notNull(),
+    title: text("title").notNull(),
+    body: text("body"),
+    url: text("url"),
+    /** false = goes to the bell quietly, no popup. */
+    popup: boolean("popup").default(true).notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({ userIdx: index("notif_user_idx").on(t.userId, t.createdAt) })
+);
+
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({ userIdx: index("push_user_idx").on(t.userId) })
+);
+
+/* ── key/value settings edited in Admin → Settings ───────── */
+
+export const settings = pgTable("settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").$type<Record<string, unknown>>().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type TicketedEvent = typeof ticketedEvents.$inferSelect;
+export type TicketTier = typeof ticketTiers.$inferSelect;
+export type TicketOrder = typeof ticketOrders.$inferSelect;
+export type Announcement = typeof announcements.$inferSelect;
+export type Notification = typeof notifications.$inferSelect;
+
 export type Club = typeof clubs.$inferSelect;
 export type EventRow = typeof events.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;

@@ -2,19 +2,31 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, MapPin, Clock, Star, Shirt, Phone, IndianRupee } from "lucide-react";
-import { getClub, getNights, getClubReviews } from "@/lib/queries";
+import { getNights, getClubReviews } from "@/lib/queries";
+import { cachedClub } from "@/lib/cache";
+import { ElegantBackground } from "@/components/fx/Backgrounds";
+import { JsonLd } from "@/components/JsonLd";
+import { absUrl } from "@/lib/site";
+import { cityName } from "@/lib/cities";
 import { NightCard } from "@/components/Cards";
 import { rupees } from "@/lib/utils";
 
 export const revalidate = 300;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
-  const club = await getClub((await params).slug);
-  return { title: club?.name ?? "Club", description: club?.tagline };
+  const club = await cachedClub((await params).slug);
+  if (!club) return { title: "Club" };
+  const city = cityName(club.citySlug);
+  return {
+    title: `${club.name}, ${club.area} — Guestlist & Free Entry in ${city}`,
+    description: `${club.tagline ?? club.name}. Get on the ${club.name} guestlist in ${club.area}, ${city} — apply before 6 PM on SyncOut.`,
+    alternates: { canonical: `/clubs/${club.slug}` },
+    openGraph: club.coverImage ? { images: [club.coverImage] } : undefined,
+  };
 }
 
 export default async function ClubPage({ params }: { params: Promise<{ slug: string }> }) {
-  const club = await getClub((await params).slug);
+  const club = await cachedClub((await params).slug);
   if (!club || !club.isActive) notFound();
 
   const [nights, reviews] = await Promise.all([
@@ -24,6 +36,25 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
 
   return (
     <>
+      <ElegantBackground />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "NightClub",
+          name: club.name,
+          description: club.description ?? club.tagline ?? undefined,
+          image: club.coverImage ? [club.coverImage] : undefined,
+          url: absUrl(`/clubs/${club.slug}`),
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: club.address ?? club.area,
+            addressLocality: cityName(club.citySlug),
+            addressCountry: "IN",
+          },
+          ...(club.priceForTwo ? { priceRange: `₹${club.priceForTwo} for two` } : {}),
+          ...(club.phone ? { telephone: club.phone } : {}),
+        }}
+      />
       {/* hero */}
       <div className="relative aspect-[4/3] w-full">
         {club.coverImage && (

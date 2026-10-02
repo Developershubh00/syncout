@@ -2,23 +2,31 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Loader2, Clock } from "lucide-react";
+import { Check, X, Loader2, Clock, Filter } from "lucide-react";
 
 /**
- * Sits above the guestlist table. Acts on every id handed to it, which is
- * the currently filtered page — approving a whole night in one click.
+ * Acts on every pending application shown — but only once a night is picked,
+ * so "Approve all" can never sweep up every club's list by accident.
+ * Approvals send the same email + notification as one-by-one approvals.
  */
-export function BulkActions({ ids }: { ids: string[] }) {
+export function BulkActions({ ids, scope }: { ids: string[]; scope: string | null }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const router = useRouter();
 
   if (!ids.length) return null;
 
+  if (!scope) {
+    return (
+      <p className="mt-1 flex items-center gap-2 rounded-xl border border-dashed border-line px-3 py-2.5 text-[12.5px] text-muted">
+        <Filter className="size-3.5" /> Pick a night above to approve, waitlist or decline its whole list at once.
+      </p>
+    );
+  }
+
   async function run(status: "approved" | "rejected" | "waitlisted") {
     const verb = status === "approved" ? "Approve" : status === "rejected" ? "Decline" : "Waitlist";
-    if (!confirm(`${verb} all ${ids.length} shown ${ids.length === 1 ? "application" : "applications"}?`))
-      return;
+    if (!confirm(`${verb} all ${ids.length} pending for ${scope}? Each guest is emailed and notified.`)) return;
 
     setBusy(status);
     setResult(null);
@@ -30,7 +38,7 @@ export function BulkActions({ ids }: { ids: string[] }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "That didn't go through.");
-      setResult(`${data.updated} updated`);
+      setResult(`${data.updated} updated${data.skipped ? ` · ${data.skipped} skipped (already changed)` : ""}`);
       router.refresh();
     } catch (e) {
       setResult((e as Error).message);
@@ -39,17 +47,7 @@ export function BulkActions({ ids }: { ids: string[] }) {
     }
   }
 
-  const Btn = ({
-    status,
-    Icon,
-    label,
-    tone,
-  }: {
-    status: "approved" | "rejected" | "waitlisted";
-    Icon: typeof Check;
-    label: string;
-    tone: string;
-  }) => (
+  const Btn = ({ status, Icon, label, tone }: { status: "approved" | "rejected" | "waitlisted"; Icon: typeof Check; label: string; tone: string }) => (
     <button
       onClick={() => run(status)}
       disabled={busy !== null}
@@ -61,22 +59,14 @@ export function BulkActions({ ids }: { ids: string[] }) {
   );
 
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface p-2.5">
-      <span className="mr-1 text-[13px] text-muted">
-        {ids.length} shown
-      </span>
+    <div className="mt-1 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface p-2.5">
+      <span className="mr-1 text-[13px] text-muted">{ids.length} pending</span>
       <Btn status="approved" Icon={Check} label="Approve all" tone="bg-red text-white" />
       <Btn status="waitlisted" Icon={Clock} label="Waitlist all" tone="bg-raised text-text" />
       <Btn status="rejected" Icon={X} label="Decline all" tone="bg-raised text-text" />
-
       <AnimatePresence>
         {result && (
-          <motion.span
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0 }}
-            className="text-[12.5px] text-muted"
-          >
+          <motion.span initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="text-[12.5px] text-muted">
             {result}
           </motion.span>
         )}

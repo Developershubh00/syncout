@@ -24,7 +24,7 @@ export const bookingSchema = z.object({
   guestPhone: z.string().regex(/^[6-9]\d{9}$/, "Enter a 10-digit Indian mobile number"),
   guestEmail: z.string().email(),
   guestInstagram: z.string().max(40).optional().or(z.literal("")),
-  arrivalTime: z.string().default("9:30 PM"),
+  arrivalTime: z.string().max(20).default("9:30 PM"),
   notes: z.string().max(300).optional().or(z.literal("")),
   companions: z
     .array(z.object({ name: z.string().max(60), gender: z.string().max(10) }))
@@ -73,15 +73,164 @@ export const eventSchema = z.object({
   guestlistOpen: z.boolean().default(true),
   cutoffHour: z.number().int().min(0).max(23).default(18),
   femaleEnabled: z.boolean().default(true),
-  femaleLimit: z.number().int().default(40),
-  femalePrice: z.number().int().default(0),
+  femaleLimit: z.number().int().min(0).default(40),
+  femalePrice: z.number().int().min(0).default(0),
   coupleEnabled: z.boolean().default(true),
-  coupleLimit: z.number().int().default(30),
-  couplePrice: z.number().int().default(0),
+  coupleLimit: z.number().int().min(0).default(30),
+  couplePrice: z.number().int().min(0).default(0),
   maleEnabled: z.boolean().default(true),
-  maleLimit: z.number().int().default(15),
-  malePrice: z.number().int().default(0),
+  maleLimit: z.number().int().min(0).default(15),
+  malePrice: z.number().int().min(0).default(0),
   perks: z.array(z.string()).default([]),
   isFeatured: z.boolean().default(false),
   isActive: z.boolean().default(true),
+});
+
+/* ── v6 ─────────────────────────────────────────────────────── */
+
+const phone = z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a 10-digit Indian mobile number");
+const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date");
+const optUrl = z.string().max(2000).optional().nullable();
+
+export const adminBookingPatchSchema = z.object({
+  status: z.enum(["pending", "approved", "rejected", "waitlisted", "checked_in", "no_show", "cancelled"]),
+  reason: z.string().max(200).optional().nullable(),
+});
+
+export const tierSchema = z.object({
+  id: z.string().uuid().optional().nullable(),
+  name: z.string().trim().min(1, "Every ticket type needs a name").max(60),
+  description: z.string().max(200).optional().nullable(),
+  price: z.number().int().min(0).max(1_000_000),
+  admits: z.number().int().min(1).max(20).default(1),
+  capacity: z.number().int().min(0).max(100_000).optional().nullable(),
+  perOrderMax: z.number().int().min(1).max(50).default(10),
+  isActive: z.boolean().default(true),
+});
+
+export const ticketedEventSchema = z.object({
+  title: z.string().trim().min(2).max(120),
+  slug: z.string().trim().min(2).max(120),
+  category: z.string().trim().min(2).max(30).default("dandiya"),
+  citySlug: z.string().trim().min(2).max(40),
+  venueName: z.string().trim().min(2).max(120),
+  area: z.string().max(80).optional().nullable(),
+  address: z.string().max(300).optional().nullable(),
+  mapUrl: optUrl,
+  startsAt: z.string().min(10),
+  endsAt: z.string().optional().nullable(),
+  days: z.array(day).max(31).default([]),
+  timeLabel: z.string().max(40).optional().nullable(),
+  poster: optUrl,
+  gallery: z.array(z.string().max(2000)).max(12).default([]),
+  description: z.string().max(4000).optional().nullable(),
+  highlights: z.array(z.string().max(120)).max(12).default([]),
+  organizer: z.string().max(120).optional().nullable(),
+  ageLimit: z.string().max(40).optional().nullable(),
+  dressCode: z.string().max(200).optional().nullable(),
+  terms: z.string().max(4000).optional().nullable(),
+  bookingMode: z.enum(["upi", "whatsapp", "external", "free"]).default("upi"),
+  externalUrl: optUrl,
+  sourceUrl: optUrl,
+  salesOpen: z.boolean().default(true),
+  isFeatured: z.boolean().default(false),
+  isActive: z.boolean().default(true),
+  sortOrder: z.number().int().default(0),
+  tiers: z.array(tierSchema).max(12).default([]),
+});
+
+export const orderSchema = z.object({
+  eventId: z.string().uuid(),
+  tierId: z.string().uuid(),
+  quantity: z.number().int().min(1).max(50),
+  day: day.optional().nullable(),
+  name: z.string().trim().min(2, "Tell us your name").max(60),
+  phone,
+  email: z.string().trim().email("That email doesn't look right").max(120),
+  note: z.string().max(300).optional().or(z.literal("")),
+});
+
+export const orderPaidSchema = z.object({
+  utr: z.string().trim().max(40).optional().or(z.literal("")),
+  k: z.string().max(64).optional().nullable(),
+  /** WhatsApp-mode bookings: record that they messaged us, without marking it paid. */
+  enquiry: z.boolean().optional(),
+});
+
+export const adminOrderPatchSchema = z.object({
+  status: z.enum(["awaiting_payment", "payment_submitted", "confirmed", "rejected", "cancelled", "refunded", "checked_in"]).optional(),
+  adminNote: z.string().max(300).optional().nullable(),
+  reason: z.string().max(200).optional().nullable(),
+});
+
+export const announcementSchema = z.object({
+  title: z.string().trim().min(2).max(120),
+  body: z.string().max(600).optional().nullable(),
+  image: optUrl,
+  ctaLabel: z.string().max(40).optional().nullable(),
+  ctaUrl: optUrl,
+  kind: z.enum(["popup", "banner"]).default("popup"),
+  audience: z.enum(["everyone", "signed_in", "signed_out"]).default("everyone"),
+  theme: z.enum(["festive", "elegant"]).default("festive"),
+  cities: z.array(z.string().max(40)).max(10).default([]),
+  startsAt: z.string().optional().nullable(),
+  endsAt: z.string().optional().nullable(),
+  isActive: z.boolean().default(true),
+  priority: z.number().int().min(-100).max(100).default(0),
+});
+
+export const offerSchema = z.object({
+  title: z.string().trim().min(2).max(120),
+  subtitle: z.string().max(80).optional().nullable(),
+  description: z.string().max(400).optional().nullable(),
+  image: optUrl,
+  clubId: z.string().uuid().optional().nullable(),
+  validTill: z.string().optional().nullable(),
+  isActive: z.boolean().default(true),
+  sortOrder: z.number().int().default(0),
+});
+
+export const homeSectionSchema = z.object({
+  key: z.enum(["events", "aroundTown", "hotspots", "onTheHouse", "howItWorks", "moreClubs"]),
+  visible: z.boolean(),
+  title: z.string().max(80),
+  sub: z.string().max(120),
+});
+
+export const settingsSchema = z.object({
+  upiVpa: z
+    .string()
+    .trim()
+    .max(80)
+    .refine((v) => !v || /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z][a-zA-Z0-9.\-]{1,64}$/.test(v), "UPI ID should look like name@bank"),
+  payeeName: z.string().trim().max(60),
+  upiQrImage: z.string().max(2000),
+  whatsapp: z
+    .string()
+    .trim()
+    .max(20)
+    .refine((v) => /^\d{10,15}$/.test(v.replace(/\D/g, "")), "WhatsApp number needs 10–15 digits"),
+  orderHoldHours: z.number().int().min(1).max(72),
+  installPrompt: z.boolean(),
+  whatsappFab: z.boolean(),
+  homeSections: z.array(homeSectionSchema).max(10),
+  gaId: z.string().trim().max(40),
+  metaPixelId: z.string().trim().max(40),
+  adsId: z.string().trim().max(40),
+  adsLabel: z.string().trim().max(80),
+});
+
+export const notifySchema = z.object({
+  audience: z.enum(["night", "event", "all_users"]),
+  targetId: z.string().uuid().optional().nullable(),
+  statuses: z.array(z.string().max(30)).max(10).default([]),
+  title: z.string().trim().min(2).max(120),
+  body: z.string().trim().max(600).default(""),
+  url: z.string().max(500).optional().nullable(),
+  channels: z.object({ inApp: z.boolean(), email: z.boolean() }),
+});
+
+export const pushSubscribeSchema = z.object({
+  endpoint: z.string().url().max(1000),
+  keys: z.object({ p256dh: z.string().max(200), auth: z.string().max(100) }),
 });

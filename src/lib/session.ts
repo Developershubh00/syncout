@@ -1,9 +1,35 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-const secret = new TextEncoder().encode(
-  process.env.AUTH_SECRET ?? "dev-only-insecure-secret-change-me"
-);
+/**
+ * Sessions are signed with AUTH_SECRET. In production there is no fallback:
+ * a missing secret means nobody is signed in and sign-in returns a clear
+ * error, rather than every visitor being able to forge an admin cookie with a
+ * secret that's printed in a public repo. Pages keep rendering either way.
+ */
+export class AuthNotConfigured extends Error {
+  constructor() {
+    super("AUTH_SECRET is not set");
+  }
+}
+
+const DEV_SECRET = "dev-only-insecure-secret-change-me";
+let warned = false;
+
+function secretKey(): Uint8Array | null {
+  const s = process.env.AUTH_SECRET;
+  if (s) return new TextEncoder().encode(s);
+  if (process.env.NODE_ENV !== "production") return new TextEncoder().encode(DEV_SECRET);
+  if (!warned) {
+    warned = true;
+    console.error("[syncout] AUTH_SECRET is not set — sign-in is disabled until you add it to the environment.");
+  }
+  return null;
+}
+
+export function authConfigured() {
+  return secretKey() !== null;
+}
 
 export const USER_COOKIE = "so_session";
 export const ADMIN_COOKIE = "so_admin";
@@ -12,17 +38,16 @@ export type SessionUser = { id: string; name: string; email: string };
 export type AdminSession = { admin: true; via: "password" | "key" };
 
 async function sign(payload: Record<string, unknown>, ttl: string) {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(ttl)
-    .sign(secret);
+  const key = secretKey();
+  if (!key) throw new AuthNotConfigured();
+  return new SignJWT(payload).setProtectedHeader({ alg: "HS256" }).setIssuedAt().setExpirationTime(ttl).sign(key);
 }
 
 async function verify<T>(token?: string): Promise<T | null> {
-  if (!token) return null;
+  const key = secretKey();
+  if (!token || !key) return null;
   try {
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, key);
     return payload as T;
   } catch {
     return null;

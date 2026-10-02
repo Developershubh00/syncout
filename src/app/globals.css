@@ -22,8 +22,8 @@
   --color-muted: #8e8e99;
   --color-faint: #5a5a66;
 
-  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Inter", ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
 
   --radius-card: 18px;
   --radius-sheet: 26px;
@@ -41,7 +41,9 @@ html {
 }
 
 body {
-  background: var(--color-ink);
+  /* Transparent so the fixed party/elegant backdrops (z-index -1) can show;
+     the page colour comes from <html>. */
+  background: transparent;
   color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -140,3 +142,133 @@ input[type="number"] { -moz-appearance: textfield; }
   /* Section headers and body copy sit flush with the 1280px container. */
   .lg-flush { padding-inline: 0; }
 }
+
+/* ── v6: backdrops ─────────────────────────────────────────────
+   Fixed layers behind the page. Radial gradients rather than blur
+   filters, so they stay cheap on mid-range phones. */
+.fx-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.fx-bg > span { position: absolute; display: block; }
+
+.fx-party {
+  background:
+    radial-gradient(60% 40% at 12% 8%, rgba(255, 43, 214, 0.16), transparent 70%),
+    radial-gradient(50% 35% at 92% 18%, rgba(242, 193, 78, 0.13), transparent 70%),
+    radial-gradient(70% 50% at 50% 105%, rgba(124, 77, 255, 0.16), transparent 70%),
+    var(--color-ink);
+}
+.fx-party .orb { width: 52vmax; height: 52vmax; border-radius: 9999px; }
+.fx-party .orb-1 { background: radial-gradient(circle, rgba(255, 43, 214, 0.22), transparent 62%); left: -16vmax; top: -14vmax; }
+.fx-party .orb-2 { background: radial-gradient(circle, rgba(255, 138, 0, 0.18), transparent 62%); right: -18vmax; top: 22vh; animation-duration: 23s; }
+.fx-party .orb-3 { background: radial-gradient(circle, rgba(0, 229, 255, 0.12), transparent 62%); left: 18vw; bottom: -24vmax; animation-duration: 27s; }
+.fx-party .sparkle {
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.7) 1px, transparent 1.6px),
+    radial-gradient(rgba(242, 193, 78, 0.8) 1px, transparent 1.6px);
+  background-size: 64px 64px, 97px 97px;
+  background-position: 0 0, 31px 47px;
+  opacity: 0.12;
+}
+
+.fx-elegant {
+  background:
+    radial-gradient(80% 50% at 50% -12%, rgba(242, 193, 78, 0.09), transparent 70%),
+    radial-gradient(55% 45% at 100% 55%, rgba(124, 10, 33, 0.26), transparent 70%),
+    radial-gradient(45% 40% at 0% 85%, rgba(228, 17, 60, 0.09), transparent 70%),
+    var(--color-ink);
+}
+.fx-elegant .beam {
+  top: -25vh; left: 62%; width: 34vw; min-width: 260px; height: 150vh;
+  background: linear-gradient(180deg, rgba(242, 193, 78, 0.075), transparent 65%);
+  transform-origin: top center;
+  transform: translateX(-50%) rotate(-8deg);
+}
+.fx-elegant .beam-2 { left: 18%; animation-duration: 21s; animation-direction: alternate-reverse; background: linear-gradient(180deg, rgba(228, 17, 60, 0.07), transparent 65%); }
+.fx-elegant .grain { inset: 0; background-image: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.016) 0 1px, transparent 1px 7px); }
+
+@keyframes fx-drift { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(6vmax, 5vmax, 0) scale(1.12); } }
+@keyframes fx-twinkle { 0%, 100% { opacity: 0.08; } 50% { opacity: 0.2; } }
+@keyframes fx-sweep { from { transform: translateX(-50%) rotate(-13deg); } to { transform: translateX(-50%) rotate(13deg); } }
+
+/* party touches */
+.party-cta {
+  background: linear-gradient(100deg, #ff2bd6, #e4113c 45%, #ff8a00);
+  background-size: 180% 100%;
+  animation: fx-pan 6s ease-in-out infinite alternate;
+  box-shadow: 0 10px 30px -10px rgba(255, 43, 214, 0.55);
+}
+@keyframes fx-pan { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+
+.text-shimmer {
+  background: linear-gradient(90deg, #f2c14e, #fff3c4 25%, #ff8a00 50%, #ff2bd6 75%, #f2c14e);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: fx-shimmer 6s linear infinite;
+}
+@keyframes fx-shimmer { from { background-position: 0% 50%; } to { background-position: 200% 50%; } }
+
+.ev-card { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06); transition: box-shadow 0.3s, transform 0.3s; }
+@media (hover: hover) {
+  .group:hover .ev-card { box-shadow: 0 0 0 2px rgba(255, 43, 214, 0.55), 0 18px 40px -18px rgba(255, 43, 214, 0.6); }
+}
+
+.festive-panel {
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(255, 43, 214, 0.18), transparent 60%),
+    radial-gradient(90% 70% at 0% 100%, rgba(255, 138, 0, 0.14), transparent 60%),
+    var(--color-surface);
+}
+
+@media (min-width: 1024px) {
+  /* Club rails sit four across on desktop (event and night rails stay at three). */
+  .rail.rail-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  /* Chip rows (city, category, status filters) stay one compact line on
+     desktop instead of turning into the 3-column card grid. */
+  .rail.chips { display: flex; gap: 8px; overflow-x: auto; padding-inline: 0; }
+  .rail.chips > * { flex: 0 0 auto; }
+}
+
+/* ── v6.2: motion that's cheap ─────────────────────────────────
+   Background drift only on desktop (phones keep their GPU for scrolling). */
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  .fx-party .orb { animation: fx-drift 18s ease-in-out infinite alternate; will-change: transform; }
+  .fx-party .orb-2 { animation-duration: 23s; }
+  .fx-party .orb-3 { animation-duration: 27s; }
+  .fx-party .sparkle { animation: fx-twinkle 6s ease-in-out infinite; }
+  .fx-elegant .beam { animation: fx-sweep 16s ease-in-out infinite alternate; will-change: transform; }
+  .fx-elegant .beam-2 { animation-duration: 21s; animation-direction: alternate-reverse; }
+}
+
+/* Loading skeletons: one light sweep, GPU-friendly */
+.sk { position: relative; overflow: hidden; background: var(--color-raised); }
+.sk::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  animation: sk-sweep 1.3s ease-in-out infinite;
+}
+@keyframes sk-sweep { to { transform: translateX(100%); } }
+
+/* Soft glow ring for the active chip */
+.chip-on { box-shadow: 0 0 0 1px rgba(255, 43, 214, 0.45), 0 6px 22px -10px rgba(255, 43, 214, 0.7); }
+
+/* light sweep across a card on hover, and across primary CTAs on a loop */
+.ev-card::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.16) 45%, transparent 60%);
+  transform: translateX(-130%); transition: transform 0.9s ease;
+}
+@media (hover: hover) { .group:hover .ev-card::after { transform: translateX(130%); } }
+.cta-shine {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.22) 50%, transparent 65%);
+  transform: translateX(-120%); animation: cta-shine 4.5s ease-in-out infinite;
+}
+@keyframes cta-shine { 0%, 55% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
+
+/* rails: the card inside a motion wrapper still stretches to its grid cell on desktop */
+@media (min-width: 1024px) { .rail > * a { width: auto !important; } }
