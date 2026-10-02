@@ -6,11 +6,20 @@ import { friendlyDate, fmtTime } from "@/lib/utils";
 import { ArrowRight } from "lucide-react";
 import { dbHealth } from "@/db/health";
 import { SetupPanel } from "@/components/admin/SetupPanel";
+import { db } from "@/db";
+import { inquiries, jobApplications } from "@/db/schema";
+import { count, eq } from "drizzle-orm";
 
 export default async function AdminHome() {
   if (!(await getAdmin())) return <AdminLogin />;
 
-  const [stats, pending, health] = await Promise.all([adminStats(), adminBookings("pending", 6), dbHealth()]);
+  const [stats, pending, health, inbox, apps] = await Promise.all([
+    adminStats(),
+    adminBookings("pending", 6),
+    dbHealth(),
+    db.select({ n: count() }).from(inquiries).where(eq(inquiries.status, "new")).then((r) => r[0]?.n ?? 0).catch(() => 0),
+    db.select({ n: count() }).from(jobApplications).where(eq(jobApplications.status, "new")).then((r) => r[0]?.n ?? 0).catch(() => 0),
+  ]);
   const needsSetup = !health.reachable || health.missing.length > 0 || health.upcomingEvents === 0 || health.upcomingNights === 0;
 
   return (
@@ -25,6 +34,8 @@ export default async function AdminHome() {
         <Stat n={stats.pending} label="Guestlist to review" accent href="/admin/bookings?status=pending" />
         <Stat n={stats.toVerify} label="Payments to verify" accent href="/admin/orders?status=payment_submitted" />
         <Stat n={`₹${stats.paidToday.toLocaleString("en-IN")}`} label="Confirmed today" href="/admin/orders?status=confirmed" />
+        <Stat n={inbox} label="New messages" accent={inbox > 0} href="/admin/inbox" />
+        <Stat n={apps} label="New applications" href="/admin/careers" />
         <Stat n={stats.tonight} label="Nights on tonight" />
         <Stat n={stats.approved} label="Approved tonight" />
         <Stat n={stats.heads} label="Heads on tonight's lists" />

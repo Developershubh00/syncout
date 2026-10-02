@@ -404,6 +404,89 @@ export const settings = pgTable("settings", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+/* ════════════════════════════════════════════════════════════════
+   v6.3 — accounts, contact inbox, careers.
+   ════════════════════════════════════════════════════════════════ */
+
+export const passwordResets = pgTable(
+  "password_resets",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    /** sha256 of the token — the token itself is only ever in the link. */
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({ userIdx: index("resets_user_idx").on(t.userId) })
+);
+
+export const inquiries = pgTable(
+  "inquiries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    /** general | booking | partner | press | careers | volunteer */
+    kind: text("kind").default("general").notNull(),
+    name: text("name").notNull(),
+    email: text("email"),
+    phone: text("phone"),
+    message: text("message").notNull(),
+    /** new | handled */
+    status: text("status").default("new").notNull(),
+    adminNote: text("admin_note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({ statusIdx: index("inquiries_status_idx").on(t.status) })
+);
+
+export const jobOpenings = pgTable("job_openings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  team: text("team"),
+  /** full_time | part_time | internship | volunteer | contract */
+  type: text("type").default("full_time").notNull(),
+  location: text("location").default("Delhi NCR").notNull(),
+  /** onsite | hybrid | remote */
+  workMode: text("work_mode").default("hybrid").notNull(),
+  summary: text("summary"),
+  responsibilities: jsonb("responsibilities").$type<string[]>().default([]).notNull(),
+  requirements: jsonb("requirements").$type<string[]>().default([]).notNull(),
+  perks: jsonb("perks").$type<string[]>().default([]).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const jobApplications = pgTable(
+  "job_applications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    openingId: uuid("opening_id").references(() => jobOpenings.id, { onDelete: "set null" }),
+    roleTitle: text("role_title").notNull(),
+    /** job | internship | volunteer */
+    kind: text("kind").default("job").notNull(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    phone: text("phone").notNull(),
+    city: text("city"),
+    /** LinkedIn, portfolio or a resume link (Drive/Dropbox). */
+    link: text("link"),
+    message: text("message"),
+    /** new | shortlisted | rejected | hired */
+    status: text("status").default("new").notNull(),
+    adminNote: text("admin_note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({ statusIdx: index("applications_status_idx").on(t.status) })
+);
+
+export type JobOpening = typeof jobOpenings.$inferSelect;
+export type Inquiry = typeof inquiries.$inferSelect;
+
 export type TicketedEvent = typeof ticketedEvents.$inferSelect;
 export type TicketTier = typeof ticketTiers.$inferSelect;
 export type TicketOrder = typeof ticketOrders.$inferSelect;

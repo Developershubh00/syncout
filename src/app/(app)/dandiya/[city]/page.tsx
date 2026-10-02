@@ -18,8 +18,8 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   };
 }
 
-export default async function DandiyaCity({ params }: { params: Promise<{ city: string }> }) {
-  const { city } = await params;
+export default async function DandiyaCity({ params, searchParams }: { params: Promise<{ city: string }>; searchParams: Promise<{ day?: string }> }) {
+  const [{ city }, { day }] = await Promise.all([params, searchParams]);
   if (!isLiveCity(city)) notFound();
   const name = cityName(city);
   return (
@@ -27,6 +27,7 @@ export default async function DandiyaCity({ params }: { params: Promise<{ city: 
       heading={`Dandiya in ${name}`}
       intro={`The Dandiya and Garba nights worth your Navratri in ${name}, 11–19 October 2026. Pick a night, choose your passes, pay by UPI.`}
       city={city}
+      day={day}
       basePath="/dandiya"
       faq={dandiyaFaq(city)}
     />

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getUser } from "@/lib/session";
 import { getUserBookings } from "@/lib/queries";
 import { LogoutButton } from "@/components/LogoutButton";
-import { ChevronRight, Ticket, Disc3, LifeBuoy, Sparkles, Bell } from "lucide-react";
+import { ChevronRight, Ticket, Disc3, LifeBuoy, Sparkles, Bell, UserPen, Briefcase, ShieldCheck as Shield } from "lucide-react";
 import { InstallButton } from "@/components/pwa/InstallButton";
 import { PushToggle } from "@/components/pwa/PushToggle";
 
@@ -56,8 +56,11 @@ export default async function ProfilePage() {
           <Item href="/passes" icon={<Ticket className="size-[18px]" />}>Passes &amp; tickets</Item>
           <Item href="/events" icon={<Sparkles className="size-[18px]" />}>Events &amp; Dandiya</Item>
           {user && <Item href="/notifications" icon={<Bell className="size-[18px]" />}>Notifications</Item>}
+          {user && <Item href="/profile/edit" icon={<UserPen className="size-[18px]" />}>Edit profile &amp; password</Item>}
           <Item href="/clubs" icon={<Disc3 className="size-[18px]" />}>Browse clubs</Item>
-          <Item href="mailto:hello@syncout.in" icon={<LifeBuoy className="size-[18px]" />}>Get help</Item>
+          <Item href="/contact" icon={<LifeBuoy className="size-[18px]" />}>Help &amp; contact</Item>
+          <Item href="/careers" icon={<Briefcase className="size-[18px]" />}>Careers, internships &amp; volunteering</Item>
+          <Item href="/privacy" icon={<Shield className="size-[18px]" />}>Privacy, terms &amp; refunds</Item>
         </ul>
         <ul className="mt-3 divide-y divide-line overflow-hidden rounded-[18px] border border-line bg-surface empty:hidden">
           <li className="empty:hidden"><InstallButton /></li>

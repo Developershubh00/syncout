@@ -1,4 +1,6 @@
 import { TopBar } from "@/components/TopBar";
+import { CityRemember } from "@/components/CityRemember";
+import { preferredCity } from "@/lib/city-pref";
 import { NightCard } from "@/components/Cards";
 import { cachedNights } from "@/lib/cache";
 import { friendlyDate } from "@/lib/utils";
@@ -20,7 +22,7 @@ export default async function NightsPage({
   searchParams: Promise<{ city?: string }>;
 }) {
   const { city: raw } = await searchParams;
-  const city = raw && isLiveCity(raw) ? raw : DEFAULT_CITY;
+  const { city, explicit } = await preferredCity(raw);
   const nights = await cachedNights({ citySlug: city, limit: 90 });
 
   // group by IST calendar day
@@ -34,6 +36,7 @@ export default async function NightsPage({
   return (
     <>
       <ElegantBackground />
+      {explicit && <CityRemember city={city} />}
       <TopBar city={city} />
       <header className="px-4 pb-2 pt-5">
         <h1 className="font-display text-[27px] font-extrabold tracking-tight">Nights</h1>

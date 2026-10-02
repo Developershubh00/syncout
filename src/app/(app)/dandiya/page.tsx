@@ -9,11 +9,13 @@ export const metadata: Metadata = {
   alternates: { canonical: "/dandiya" },
 };
 
-export default function DandiyaPage() {
+export default async function DandiyaPage({ searchParams }: { searchParams: Promise<{ day?: string }> }) {
+  const { day } = await searchParams;
   return (
     <EventsListing
       heading="Dandiya Nights 2026"
       intro="Every big Dandiya and Garba night in Delhi, Gurugram and Noida this Navratri — from JLN Stadium and India Expo Centre to CyberHub and club nights. Book in a minute, pay by UPI."
+      day={day}
       basePath="/dandiya"
       faq={dandiyaFaq()}
     />

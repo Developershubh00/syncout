@@ -42,6 +42,9 @@ export default function LoginPage() {
         <Input label="Email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
         <Input label="Password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
         <Button type="submit" size="lg" full loading={busy} className="mt-2">Log in</Button>
+        <p className="text-center text-[13px]">
+          <Link href="/forgot" className="text-muted underline-offset-2 hover:text-text hover:underline">Forgot password?</Link>
+        </p>
       </form>
 
       <p className="mt-5 text-center text-[13px] text-muted">

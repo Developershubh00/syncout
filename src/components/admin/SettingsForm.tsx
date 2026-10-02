@@ -91,6 +91,22 @@ export function SettingsForm({ initial, status }: { initial: SiteSettings; statu
         </ul>
       </Card>
 
+      <Card title="Business & legal" sub="Shown on Privacy, Terms, Refunds and Contact. Fill these before running ads.">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input label="Brand name" value={s.businessName} onChange={(e) => up("businessName", e.target.value)} />
+          <Input label="Registered company name" placeholder="SyncOut Pvt Ltd" value={s.legalName} onChange={(e) => up("legalName", e.target.value)} />
+        </div>
+        <Input label="Registered address" value={s.businessAddress} onChange={(e) => up("businessAddress", e.target.value)} />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input label="Support email" value={s.supportEmail} onChange={(e) => up("supportEmail", e.target.value)} />
+          <Input label="Support phone" value={s.supportPhone} onChange={(e) => up("supportPhone", e.target.value)} />
+          <Input label="Grievance Officer (name)" value={s.grievanceOfficer} onChange={(e) => up("grievanceOfficer", e.target.value)} />
+          <Input label="Grievance Officer (email)" value={s.grievanceEmail} onChange={(e) => up("grievanceEmail", e.target.value)} />
+          <Input label="Instagram handle" placeholder="syncout.in" value={s.instagram} onChange={(e) => up("instagram", e.target.value)} />
+        </div>
+        <Toggle label='Show a "No booking fee" badge on event pages (only if true)' on={s.noBookingFee} onChange={(v) => up("noBookingFee", v)} />
+      </Card>
+
       <Card title="App" sub="">
         <div className="flex flex-wrap gap-6">
           <Toggle label="Ask visitors to install the app" on={s.installPrompt} onChange={(v) => up("installPrompt", v)} />

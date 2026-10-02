@@ -50,3 +50,27 @@ export function eventDayList(ev: { days?: string[] | null; startsAt: Date | stri
 }
 
 export const rs = (n: number) => (n ? "₹" + n.toLocaleString("en-IN") : "Free");
+
+/* ── day filters (IST) ── */
+export function todayKey(now = new Date()) {
+  return istDateKey(now);
+}
+
+/** The coming Fri–Sun (or the rest of it, if it's already the weekend). */
+export function weekendKeys(now = new Date()) {
+  const keys: string[] = [];
+  const start = istAt(todayKey(now), 12);
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start.getTime() + i * 864e5);
+    const dow = d.getUTCDay();
+    if (dow === 5 || dow === 6 || dow === 0) keys.push(istDateKey(d));
+    if (dow === 0 && keys.length) break;
+  }
+  return keys;
+}
+
+export function shortDayLabel(dayKey: string) {
+  const d = istAt(dayKey, 12);
+  const f = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", ...o }).format(d);
+  return `${f({ weekday: "short" })} ${f({ day: "numeric" })}`;
+}

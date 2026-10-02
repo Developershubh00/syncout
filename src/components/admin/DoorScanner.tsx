@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Search } from "lucide-react";
+import { Check, X, Search, ScanLine, CameraOff } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 
@@ -20,16 +20,89 @@ type Result = {
 } | null;
 
 /** Guestlist passes (6 characters) and event tickets (7, starting with T). */
-export function DoorScanner() {
+/** Pull a code out of whatever the QR held: our door link, or a bare code. */
+function codeFrom(text: string) {
+  try {
+    const u = new URL(text);
+    const c = u.searchParams.get("code");
+    if (c) return c.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  } catch {}
+  return text.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(-7);
+}
+
+export function DoorScanner({ initialCode }: { initialCode?: string }) {
   const toast = useToast();
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(initialCode ?? "");
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<Result>(null);
   const [miss, setMiss] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const video = useRef<HTMLVideoElement>(null);
+  const stream = useRef<MediaStream | null>(null);
+  const raf = useRef<number>(0);
+
+  useEffect(() => {
+    if (initialCode) find(initialCode);
+    return () => stopScan();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function stopScan() {
+    cancelAnimationFrame(raf.current);
+    stream.current?.getTracks().forEach((t) => t.stop());
+    stream.current = null;
+    setScanning(false);
+  }
+
+  async function startScan() {
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+      stream.current = s;
+      setScanning(true);
+      const jsQR = (await import("jsqr")).default;
+      await new Promise((r) => requestAnimationFrame(() => r(null))); // let the <video> mount
+      const v = video.current;
+      if (!v) throw new Error("no video element");
+      v.srcObject = s;
+      await v.play();
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+      const tick = () => {
+        if (!stream.current) return;
+        if (v.readyState >= 2 && v.videoWidth) {
+          const w = 480;
+          const h = Math.round((v.videoHeight / v.videoWidth) * w);
+          canvas.width = w;
+          canvas.height = h;
+          ctx.drawImage(v, 0, 0, w, h);
+          const hit = jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "dontInvert" });
+          if (hit?.data) {
+            const c = codeFrom(hit.data);
+            if (c.length >= 6) {
+              navigator.vibrate?.(60);
+              stopScan();
+              setCode(c);
+              find(c);
+              return;
+            }
+          }
+        }
+        raf.current = requestAnimationFrame(tick);
+      };
+      raf.current = requestAnimationFrame(tick);
+    } catch {
+      stopScan();
+      toast("Camera blocked — allow camera access, or type the code", "err");
+    }
+  }
 
   async function lookup(e: React.FormEvent) {
     e.preventDefault();
-    const c = code.trim().toUpperCase();
+    await find(code);
+  }
+
+  async function find(raw: string) {
+    const c = raw.trim().toUpperCase();
     if (c.length < 4) return;
     setBusy(true);
     setMiss(false);
@@ -77,6 +150,18 @@ export function DoorScanner() {
           <Search className="size-4" />
         </Button>
       </form>
+
+      <div className="mt-3">
+        {scanning ? (
+          <div className="relative overflow-hidden rounded-[22px] border border-gold/40 bg-black">
+            <video ref={video} playsInline muted className="aspect-[4/3] w-full object-cover" />
+            <motion.div className="pointer-events-none absolute inset-x-6 h-0.5 bg-gold shadow-[0_0_14px_rgba(242,193,78,.9)]" animate={{ top: ["15%", "85%", "15%"] }} transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }} />
+            <button onClick={stopScan} className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-ink/80 px-3 py-1.5 text-[12.5px] font-semibold"><CameraOff className="size-3.5" /> Stop</button>
+          </div>
+        ) : (
+          <Button full size="lg" variant="gold" onClick={startScan}><ScanLine className="size-4" /> Scan QR with camera</Button>
+        )}
+      </div>
 
       <AnimatePresence mode="wait">
         {miss && (

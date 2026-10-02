@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { TopBar } from "@/components/TopBar";
+import { CityRemember } from "@/components/CityRemember";
+import { preferredCity } from "@/lib/city-pref";
 import { CutoffBanner } from "@/components/CutoffBanner";
 import { SectionHead } from "@/components/SectionHead";
 import { ClubCard, NightCard, OfferCard } from "@/components/Cards";
@@ -18,7 +20,7 @@ import { DEFAULT_CITY, isLiveCity } from "@/lib/cities";
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ city?: string }> }) {
   const { city: raw } = await searchParams;
-  const city = raw && isLiveCity(raw) ? raw : DEFAULT_CITY;
+  const { city, explicit } = await preferredCity(raw);
 
   return (
     <>
@@ -46,6 +48,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
           },
         ]}
       />
+      {explicit && <CityRemember city={city} />}
       <TopBar city={city} />
       <CutoffBanner />
       <Suspense fallback={<HomeSkeleton />}>
@@ -280,6 +283,11 @@ function Footer() {
         <Link href="/clubs">Clubs</Link>
         <Link href="/nights">Nights</Link>
         <Link href="/passes">Your passes</Link>
+        <Link href="/careers">Careers</Link>
+        <Link href="/contact">Contact</Link>
+        <Link href="/privacy">Privacy</Link>
+        <Link href="/terms">Terms</Link>
+        <Link href="/refunds">Refunds</Link>
       </nav>
       <p className="mt-5 text-faint">© {new Date().getFullYear()} SyncOut Pvt Ltd</p>
     </footer>

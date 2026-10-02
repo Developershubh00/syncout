@@ -7,6 +7,8 @@ import { PartyBackground } from "@/components/fx/Backgrounds";
 import { MotionCard } from "@/components/motion/Reveal";
 import { JsonLd } from "@/components/JsonLd";
 import { DevDbHint } from "@/components/DevDbHint";
+import { CityRemember } from "@/components/CityRemember";
+import { eventDayList, todayKey, weekendKeys, shortDayLabel } from "@/lib/event-format";
 import { LIVE_CITIES, cityName } from "@/lib/cities";
 import { CATEGORIES, categoryLabel } from "@/lib/event-labels";
 import { absUrl } from "@/lib/site";
@@ -17,29 +19,44 @@ type Props = {
   intro: string;
   city?: string;
   category?: string;
+  /** "tonight" | "weekend" | YYYY-MM-DD */
+  day?: string;
   /** Builds chip links; landing pages keep their own URL shape. */
   basePath: "/events" | "/dandiya";
   faq?: { q: string; a: string }[];
 };
 
 /** Shared by /events, /events/in/[city], /dandiya and /dandiya/[city]. */
-export async function EventsListing({ heading, intro, city, category, basePath, faq }: Props) {
+export async function EventsListing({ heading, intro, city, category, day, basePath, faq }: Props) {
   const list = await cachedEvents({ citySlug: city, category: basePath === "/dandiya" ? undefined : category, limit: 90 });
-  const events = basePath === "/dandiya" ? list.filter((e) => e.category === "dandiya" || e.category === "garba") : list;
+  const scoped = basePath === "/dandiya" ? list.filter((e) => e.category === "dandiya" || e.category === "garba") : list;
   const present = new Set(list.map((e) => e.category));
 
-  const cityHref = (slug?: string) =>
-    basePath === "/dandiya"
-      ? slug ? `/dandiya/${slug}` : "/dandiya"
-      : slug ? `/events/in/${slug}${category ? `?category=${category}` : ""}` : `/events${category ? `?category=${category}` : ""}`;
-  const catHref = (id?: string) => {
-    const root = city ? `/events/in/${city}` : "/events";
-    return id ? `${root}?category=${id}` : root;
+  // Day filter: tonight, this weekend, or one date. Chips only for dates that have something on.
+  const today = todayKey();
+  const weekend = weekendKeys();
+  const wanted = day === "tonight" ? [today] : day === "weekend" ? weekend : day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? [day] : null;
+  const events = wanted ? scoped.filter((e) => eventDayList(e).some((d) => wanted.includes(d))) : scoped;
+  const dates = [...new Set(scoped.flatMap((e) => eventDayList(e)))].filter((d) => d >= today).sort().slice(0, 14);
+  const hasTonight = dates.includes(today);
+  const hasWeekend = dates.some((d) => weekend.includes(d));
+
+  const qs = (o: { category?: string; day?: string }) => {
+    const p = new URLSearchParams();
+    if (o.category) p.set("category", o.category);
+    if (o.day) p.set("day", o.day);
+    const q = p.toString();
+    return q ? `?${q}` : "";
   };
+  const root = (slug?: string) => (basePath === "/dandiya" ? (slug ? `/dandiya/${slug}` : "/dandiya") : slug ? `/events/in/${slug}` : "/events");
+  const cityHref = (slug?: string) => root(slug) + qs({ category: basePath === "/events" ? category : undefined, day });
+  const catHref = (id?: string) => root(city) + qs({ category: id, day });
+  const dayHref = (d?: string) => root(city) + qs({ category: basePath === "/events" ? category : undefined, day: d });
 
   return (
     <>
       <PartyBackground />
+      {city && <CityRemember city={city} />}
       <JsonLd
         data={{
           "@context": "https://schema.org",
@@ -83,6 +100,28 @@ export async function EventsListing({ heading, intro, city, category, basePath, 
         ))}
       </nav>
 
+      {dates.length > 1 && (
+        <nav aria-label="Dates" className="rail chips pb-2 pt-1">
+          {[
+            { key: undefined, label: "Any day" },
+            ...(hasTonight ? [{ key: "tonight", label: "Tonight" }] : []),
+            ...(hasWeekend ? [{ key: "weekend", label: "This weekend" }] : []),
+            ...dates.map((d) => ({ key: d, label: shortDayLabel(d) })),
+          ].map((c) => (
+            <Link
+              key={c.label}
+              href={dayHref(c.key)}
+              className={cn(
+                "rounded-full border px-3 py-1 text-[12.5px] font-medium",
+                (c.key ?? undefined) === (day || undefined) ? "chip-on border-gold/70 bg-gold/12 text-gold" : "border-line bg-ink/40 text-muted hover:text-text"
+              )}
+            >
+              {c.label}
+            </Link>
+          ))}
+        </nav>
+      )}
+
       {basePath === "/events" && present.size > 1 && (
         <nav aria-label="Categories" className="rail chips pb-2">
           {[{ id: undefined, label: "Everything" }, ...CATEGORIES.filter((c) => present.has(c.id))].map((c) => (
@@ -103,9 +142,9 @@ export async function EventsListing({ heading, intro, city, category, basePath, 
       {events.length === 0 ? (
         <div className="pt-4">
           <Empty
-            title={`Nothing listed${city ? ` in ${cityName(city)}` : ""} yet`}
-            body="New events go up every week. Try another city or check back soon."
-            cta={city || category ? { href: basePath, label: "See all of Delhi NCR" } : undefined}
+            title={wanted ? "Nothing on that day" : `Nothing listed${city ? ` in ${cityName(city)}` : ""} yet`}
+            body={wanted ? "Try another date, or see everything coming up." : "New events go up every week. Try another city or check back soon."}
+            cta={wanted ? { href: root(city), label: "Any day" } : city || category ? { href: basePath, label: "See all of Delhi NCR" } : undefined}
           />
           <DevDbHint />
         </div>

@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, ExternalLink, Lock, Minus, Plus, Ticket, MessageCircle } from "lucide-react";
-import { Sheet } from "@/components/ui/Sheet";
+import { Sheet, SheetFooter } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Field";
 import { useToast } from "@/components/ui/Toast";
@@ -214,13 +214,17 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
                 </div>
               )}
 
-              <div className="mt-5 flex items-center justify-between">
-                <span className="text-[13px] text-muted">Total</span>
-                <span className="font-display text-[22px] font-extrabold">{rs(total)}</span>
-              </div>
-              <Button size="lg" full className="mt-4" disabled={!tier || max < 1} onClick={() => setStep(1)}>
-                Continue
-              </Button>
+              <SheetFooter>
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[12px] text-muted">Total · {qty} {qty === 1 ? "ticket" : "tickets"}</p>
+                    <p className="font-display text-[22px] font-extrabold leading-tight">{rs(total)}</p>
+                  </div>
+                  <Button size="lg" className="min-w-[150px]" disabled={!tier || max < 1} onClick={() => setStep(1)}>
+                    Continue
+                  </Button>
+                </div>
+              </SheetFooter>
             </motion.div>
           )}
 
@@ -230,10 +234,12 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
               <Input label="Mobile" hint="WhatsApp number, ideally" inputMode="numeric" placeholder="98XXXXXXXX" value={form.phone} onChange={set("phone")} error={errors.phone} autoComplete="tel" />
               <Input label="Email" type="email" placeholder="you@email.com" value={form.email} onChange={set("email")} error={errors.email} autoComplete="email" />
               <Textarea label="Anything we should know?" placeholder="Group names, a birthday…" value={form.note} onChange={set("note")} />
-              <div className="flex gap-2.5 pt-1">
-                <Button variant="ghost" size="lg" onClick={() => setStep(0)}>Back</Button>
-                <Button size="lg" full onClick={() => validate() && setStep(2)}>Review</Button>
-              </div>
+              <SheetFooter>
+                <div className="flex gap-2.5">
+                  <Button variant="ghost" size="lg" onClick={() => setStep(0)}>Back</Button>
+                  <Button size="lg" full onClick={() => validate() && setStep(2)}>Review · {rs(total)}</Button>
+                </div>
+              </SheetFooter>
             </motion.div>
           )}
 
@@ -252,11 +258,17 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
                   <p className="flex gap-2"><MessageCircle className="mt-0.5 size-4 shrink-0 text-[#25D366]" /> Next, send your booking to us on WhatsApp and we&apos;ll share payment details and confirm your tickets there.</p>
                 )}
                 {mode === "free" && <p>This one&apos;s free — we&apos;ll confirm your spot shortly.</p>}
+                <p className="mt-2 text-[11.5px] text-faint">
+                  By booking you agree to the <a href="/terms" target="_blank" className="underline">Terms</a> and{" "}
+                  <a href="/refunds" target="_blank" className="underline">Refund policy</a>.
+                </p>
               </div>
-              <div className="mt-5 flex gap-2.5">
-                <Button variant="ghost" size="lg" onClick={() => setStep(1)}>Back</Button>
-                <Button size="lg" full loading={busy} onClick={submit}>Book now</Button>
-              </div>
+              <SheetFooter>
+                <div className="flex gap-2.5">
+                  <Button variant="ghost" size="lg" onClick={() => setStep(1)}>Back</Button>
+                  <Button size="lg" full loading={busy} onClick={submit}>Book now · {rs(total)}</Button>
+                </div>
+              </SheetFooter>
             </motion.div>
           )}
         </AnimatePresence>

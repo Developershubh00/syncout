@@ -13,6 +13,11 @@ import { ORDER_STATUS } from "@/lib/event-labels";
 import { cityName } from "@/lib/cities";
 import { PaymentPanel } from "@/components/events/PaymentPanel";
 import { PartyBackground } from "@/components/fx/Backgrounds";
+import { TicketQr } from "@/components/TicketQr";
+import { AddToCalendar } from "@/components/AddToCalendar";
+import { ShareButton } from "@/components/ShareButton";
+import { absUrl } from "@/lib/site";
+import { istAt } from "@/lib/guestlist";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Your booking", robots: { index: false, follow: false } };
@@ -49,6 +54,12 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
   const confirmed = o.status === "confirmed" || o.status === "checked_in";
   const payable = o.status === "awaiting_payment" || o.status === "payment_submitted";
   const look = ORDER_STATUS[o.status];
+  const doorQr = confirmed ? await qrSvg(absUrl(`/admin/door?code=${o.code}`)) : null;
+  const startAt = (() => {
+    const base = new Date(o.startsAt);
+    const ist = new Date(base.getTime() + 330 * 60000);
+    return o.day ? istAt(o.day, ist.getUTCHours(), ist.getUTCMinutes()) : base;
+  })();
   const Icon = confirmed ? Check : o.status === "rejected" || o.status === "cancelled" ? XCircle : Hourglass;
 
   let upi: { vpa: string | null; payee: string; link: string | null; qrSvg: string | null; qrImage: string | null } | null = null;
@@ -96,8 +107,23 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
               <p className={`mt-1 font-display text-[32px] font-extrabold leading-none tracking-[0.14em] ${confirmed ? "text-gold" : "text-text"}`}>{o.code}</p>
               {confirmed && <p className="mt-2 text-[11.5px] text-muted">Admits {o.admits}</p>}
             </div>
+            {doorQr && <TicketQr svg={doorQr} caption="Brightness up, and show this with a photo ID. It opens offline once you've viewed it here." />}
           </div>
         </div>
+
+        {confirmed && (
+          <div className="mt-4 space-y-2.5">
+            <AddToCalendar
+              title={o.eventTitle}
+              start={startAt}
+              end={new Date(startAt.getTime() + 5 * 3600e3)}
+              location={`${o.venueName}, ${city}`}
+              details={`Booking ${o.code} · ${o.quantity} × ${o.tierName}`}
+              icsHref={`/api/calendar/${o.code}${k ? `?k=${k}` : ""}`}
+            />
+            <ShareButton path={`/events/${o.eventSlug}`} title={o.eventTitle} text={`I'm going to ${o.eventTitle} — come along!`} label="Invite friends" className="h-11 w-full justify-center rounded-xl" />
+          </div>
+        )}
 
         {payable && (
           <div className="mt-4">

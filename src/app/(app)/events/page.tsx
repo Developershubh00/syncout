@@ -11,8 +11,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/events" },
 };
 
-export default async function EventsPage({ searchParams }: { searchParams: Promise<{ category?: string; city?: string }> }) {
-  const { category, city } = await searchParams;
+export default async function EventsPage({ searchParams }: { searchParams: Promise<{ category?: string; city?: string; day?: string }> }) {
+  const { category, city, day } = await searchParams;
   const cat = CATEGORIES.some((c) => c.id === category) ? category : undefined;
   return (
     <>
@@ -22,6 +22,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
         intro="Dandiya and Garba nights for Navratri, plus parties and festivals in Delhi, Gurugram and Noida. Pick a night, pay by UPI, done."
         category={cat}
         city={city && isLiveCity(city) ? city : undefined}
+        day={day}
         basePath="/events"
         faq={dandiyaFaq()}
       />

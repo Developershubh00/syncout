@@ -16,7 +16,7 @@ import "./load-env";
 import { db } from "./index";
 import { bookings, cities, clubs, events, offers, reviews, ticketOrders, ticketedEvents } from "./schema";
 import { istNightWindow } from "../lib/guestlist";
-import { seedCitiesAndClubs, seedNights, seedNavratri } from "./seed-core";
+import { seedCitiesAndClubs, seedNights, seedNavratri, seedCareers } from "./seed-core";
 import { asc, count } from "drizzle-orm";
 const args = new Set(process.argv.slice(2));
 
@@ -101,6 +101,9 @@ async function main() {
 
   console.log("→ Navratri 2026 events, Dandiya popup, settings");
   console.log(`   ${await seedNavratri()} new events`);
+
+  console.log("→ careers: job, internship and volunteer openings");
+  console.log(`   ${await seedCareers()} new`);
 
   console.log("✓ seeded — nothing existing was changed. A running site shows new events within 2 minutes.");
   process.exit(0);

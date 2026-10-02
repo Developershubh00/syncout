@@ -1,8 +1,9 @@
-/* SyncOut service worker — installability, an offline fallback, and push.
-   It deliberately does NOT cache pages or API calls: listings change by the
-   minute and a stale guestlist is worse than no guestlist. */
-const VERSION = "syncout-v6-1";
+/* SyncOut service worker — installability, push, and tickets that open offline.
+   Only passes and tickets are kept (venues often have no signal); every other
+   page always comes fresh from the network. */
+const VERSION = "syncout-v6-3";
 const OFFLINE = "/offline.html";
+const KEEP = "syncout-tickets";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -12,14 +13,26 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k)))).then(() => self.clients.claim())
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== KEEP).map((k) => caches.delete(k)))).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET" || req.mode !== "navigate") return;
-  event.respondWith(fetch(req).catch(() => caches.match(OFFLINE)));
+  const path = new URL(req.url).pathname;
+  const keep = path.startsWith("/tickets/") || path.startsWith("/passes");
+  event.respondWith(
+    fetch(req)
+      .then((res) => {
+        if (keep && res.ok) {
+          const copy = res.clone();
+          caches.open(KEEP).then((c) => c.put(req, copy));
+        }
+        return res;
+      })
+      .catch(async () => (keep && (await caches.match(req))) || caches.match(OFFLINE))
+  );
 });
 
 self.addEventListener("push", (event) => {
@@ -29,9 +42,8 @@ self.addEventListener("push", (event) => {
   } catch (e) {
     data = { title: "SyncOut", body: event.data ? event.data.text() : "" };
   }
-  const title = data.title || "SyncOut";
   event.waitUntil(
-    self.registration.showNotification(title, {
+    self.registration.showNotification(data.title || "SyncOut", {
       body: data.body || "",
       icon: "/icons/icon-192.png",
       badge: "/icons/badge-96.png",

@@ -5,6 +5,7 @@ import { adminBookings, adminNightOptions } from "@/lib/queries";
 import { BookingRow } from "@/components/admin/BookingRow";
 import { BulkActions } from "@/components/admin/BulkActions";
 import { NightFilter } from "@/components/admin/NightFilter";
+import { AdminSearch } from "@/components/admin/AdminSearch";
 
 export const dynamic = "force-dynamic";
 
@@ -18,11 +19,11 @@ const LABEL: Record<string, string> = {
   all: "All",
 };
 
-export default async function AdminBookings({ searchParams }: { searchParams: Promise<{ status?: string; event?: string }> }) {
+export default async function AdminBookings({ searchParams }: { searchParams: Promise<{ status?: string; event?: string; q?: string }> }) {
   if (!(await getAdmin())) redirect("/admin");
 
-  const { status = "pending", event } = await searchParams;
-  const [rows, nights] = await Promise.all([adminBookings(status, 300, event), adminNightOptions()]);
+  const { status = "pending", event, q } = await searchParams;
+  const [rows, nights] = await Promise.all([adminBookings(q ? "all" : status, 300, event, q), adminNightOptions()]);
   const night = nights.find((n) => n.id === event);
 
   return (
@@ -43,6 +44,7 @@ export default async function AdminBookings({ searchParams }: { searchParams: Pr
 
       <div className="mt-3 px-4 lg:px-0">
         <NightFilter options={nights.map((n) => ({ ...n, startsAt: String(n.startsAt) }))} value={event} status={status} />
+        <AdminSearch placeholder="Find by name, phone, email or code" />
       </div>
 
       <div className="rail chips py-3.5">
