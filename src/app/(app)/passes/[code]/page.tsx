@@ -7,6 +7,10 @@ import { cutoffFor } from "@/lib/guestlist";
 import { getAdmin, getUser } from "@/lib/session";
 import { hasAccess } from "@/lib/access";
 import { Lock } from "lucide-react";
+import { qrSvg } from "@/lib/upi";
+import { absUrl } from "@/lib/site";
+import { TicketQr } from "@/components/TicketQr";
+import { AddToCalendar } from "@/components/AddToCalendar";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Your pass", robots: { index: false, follow: false } };
@@ -57,6 +61,7 @@ export default async function PassPage({
   const look = LOOK[b.status];
   const cutoff = cutoffFor(new Date(b.startsAt), b.cutoffHour);
   const approved = b.status === "approved" || b.status === "checked_in";
+  const doorQr = approved ? await qrSvg(absUrl(`/admin/door?code=${b.code}`)) : null;
 
   return (
     <>
@@ -123,6 +128,20 @@ export default async function PassPage({
           </div>
         </div>
       </div>
+
+      {doorQr && (
+        <div className="space-y-2.5 px-4">
+          <TicketQr svg={doorQr} caption="Show this at the door with a photo ID for everyone in your group. Works offline once opened." />
+          <AddToCalendar
+            title={`${b.eventTitle} — ${b.clubName}`}
+            start={new Date(b.startsAt)}
+            end={new Date(new Date(b.startsAt).getTime() + 4 * 3600e3)}
+            location={[b.clubName, b.clubAddress ?? b.clubArea].filter(Boolean).join(", ")}
+            details={`Guestlist pass ${b.code} for ${b.totalGuests}. Reach by ${b.arrivalTime ?? "10:30 PM"}.`}
+            icsHref={`/api/calendar/${b.code}${k ? `?k=${k}` : ""}`}
+          />
+        </div>
+      )}
 
       {!approved && (
         <p className="px-4 pt-2 text-center text-[12.5px] text-muted">

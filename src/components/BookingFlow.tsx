@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Minus, Plus, ArrowRight, Lock, Users, User, Heart } from "lucide-react";
-import { Sheet } from "@/components/ui/Sheet";
+import { Sheet, SheetFooter } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea, Select } from "@/components/ui/Field";
 import { useToast } from "@/components/ui/Toast";
@@ -241,15 +241,11 @@ export function BookingFlow({
                     )}
                   </div>
 
-                  <Button
-                    size="lg"
-                    full
-                    className="mt-5"
-                    disabled={total < 1 || total > spotsLeft}
-                    onClick={() => setStep(1)}
-                  >
-                    Continue
-                  </Button>
+                  <SheetFooter>
+                    <Button size="lg" full disabled={total < 1 || total > spotsLeft} onClick={() => setStep(1)}>
+                      Continue · {total} {total === 1 ? "person" : "people"}
+                    </Button>
+                  </SheetFooter>
                 </motion.div>
               )}
             </motion.div>
@@ -312,10 +308,12 @@ export function BookingFlow({
                 onChange={set("notes")}
               />
 
-              <div className="flex gap-2.5 pt-1">
-                <Button variant="ghost" size="lg" onClick={() => setStep(0)}>Back</Button>
-                <Button size="lg" full onClick={() => validate() && setStep(2)}>Review</Button>
-              </div>
+              <SheetFooter>
+                <div className="flex gap-2.5">
+                  <Button variant="ghost" size="lg" onClick={() => setStep(0)}>Back</Button>
+                  <Button size="lg" full onClick={() => validate() && setStep(2)}>Review</Button>
+                </div>
+              </SheetFooter>
             </motion.div>
           )}
 
@@ -346,10 +344,12 @@ export function BookingFlow({
                 <p className="mt-2">Carry a government photo ID. 21+ only. Entry stays at the venue&apos;s discretion.</p>
               </div>
 
-              <div className="mt-5 flex gap-2.5">
-                <Button variant="ghost" size="lg" onClick={() => setStep(1)}>Back</Button>
-                <Button size="lg" full loading={busy} onClick={submit}>Send application</Button>
-              </div>
+              <SheetFooter>
+                <div className="flex gap-2.5">
+                  <Button variant="ghost" size="lg" onClick={() => setStep(1)}>Back</Button>
+                  <Button size="lg" full loading={busy} onClick={submit}>Send application</Button>
+                </div>
+              </SheetFooter>
             </motion.div>
           )}
         </AnimatePresence>

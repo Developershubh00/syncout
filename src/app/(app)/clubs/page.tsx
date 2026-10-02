@@ -1,4 +1,6 @@
 import { TopBar } from "@/components/TopBar";
+import { CityRemember } from "@/components/CityRemember";
+import { preferredCity } from "@/lib/city-pref";
 import { ClubCard } from "@/components/Cards";
 import { cachedClubs } from "@/lib/cache";
 import { Empty } from "@/components/Empty";
@@ -20,12 +22,13 @@ export default async function ClubsPage({
   searchParams: Promise<{ city?: string }>;
 }) {
   const { city: raw } = await searchParams;
-  const city = raw && isLiveCity(raw) ? raw : DEFAULT_CITY;
+  const { city, explicit } = await preferredCity(raw);
   const list = await cachedClubs(city, 80);
 
   return (
     <>
       <ElegantBackground />
+      {explicit && <CityRemember city={city} />}
       <TopBar city={city} />
 
       <header className="px-4 pb-1 pt-5">

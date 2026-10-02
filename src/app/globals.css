@@ -272,3 +272,8 @@ input[type="number"] { -moz-appearance: textfield; }
 
 /* rails: the card inside a motion wrapper still stretches to its grid cell on desktop */
 @media (min-width: 1024px) { .rail > * a { width: auto !important; } }
+
+/* WhatsApp button steps aside while a sheet is open */
+.wa-fab { transition: opacity 0.2s ease, transform 0.2s ease; }
+body[data-sheet] .wa-fab { opacity: 0; transform: scale(0.6); pointer-events: none; }
+@media (min-width: 1024px) { .wa-fab { bottom: 24px !important; } }

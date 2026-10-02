@@ -214,6 +214,15 @@ export const settingsSchema = z.object({
   installPrompt: z.boolean(),
   whatsappFab: z.boolean(),
   homeSections: z.array(homeSectionSchema).max(10),
+  businessName: z.string().trim().max(80),
+  legalName: z.string().trim().max(120),
+  businessAddress: z.string().trim().max(300),
+  supportEmail: z.string().trim().max(120),
+  supportPhone: z.string().trim().max(20),
+  grievanceOfficer: z.string().trim().max(80),
+  grievanceEmail: z.string().trim().max(120),
+  instagram: z.string().trim().max(40),
+  noBookingFee: z.boolean(),
   gaId: z.string().trim().max(40),
   metaPixelId: z.string().trim().max(40),
   adsId: z.string().trim().max(40),
@@ -233,4 +242,65 @@ export const notifySchema = z.object({
 export const pushSubscribeSchema = z.object({
   endpoint: z.string().url().max(1000),
   keys: z.object({ p256dh: z.string().max(200), auth: z.string().max(100) }),
+});
+
+/* ── v6.3 ───────────────────────────────────────────────────── */
+
+const optPhone = z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a 10-digit Indian mobile number").optional().or(z.literal(""));
+
+export const inquirySchema = z
+  .object({
+    kind: z.enum(["general", "booking", "partner", "press", "careers", "volunteer"]).default("general"),
+    name: z.string().trim().min(2, "Tell us your name").max(80),
+    email: z.string().trim().email("That email doesn't look right").max(120).optional().or(z.literal("")),
+    phone: optPhone,
+    message: z.string().trim().min(10, "A little more detail, please").max(2000),
+    website: z.string().max(0).optional(), // honeypot: real people leave it empty
+  })
+  .refine((d) => Boolean(d.email || d.phone), { message: "Add an email or a phone number so we can reply", path: ["email"] });
+
+export const applicationSchema = z.object({
+  openingId: z.string().uuid().optional().nullable(),
+  roleTitle: z.string().trim().min(2).max(120),
+  kind: z.enum(["job", "internship", "volunteer"]).default("job"),
+  name: z.string().trim().min(2, "Tell us your name").max(80),
+  email: z.string().trim().email("That email doesn't look right").max(120),
+  phone: z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a 10-digit Indian mobile number"),
+  city: z.string().trim().max(60).optional().or(z.literal("")),
+  link: z.string().trim().max(300).optional().or(z.literal("")),
+  message: z.string().trim().max(2000).optional().or(z.literal("")),
+  website: z.string().max(0).optional(),
+});
+
+export const openingSchema = z.object({
+  slug: z.string().trim().min(2).max(80),
+  title: z.string().trim().min(2).max(120),
+  team: z.string().max(60).optional().nullable(),
+  type: z.enum(["full_time", "part_time", "internship", "volunteer", "contract"]),
+  location: z.string().trim().min(2).max(80),
+  workMode: z.enum(["onsite", "hybrid", "remote"]),
+  summary: z.string().max(600).optional().nullable(),
+  responsibilities: z.array(z.string().max(200)).max(15).default([]),
+  requirements: z.array(z.string().max(200)).max(15).default([]),
+  perks: z.array(z.string().max(120)).max(10).default([]),
+  isActive: z.boolean().default(true),
+  sortOrder: z.number().int().default(0),
+});
+
+export const profileSchema = z.object({
+  name: z.string().trim().min(2, "Tell us your name").max(60),
+  phone: z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a 10-digit Indian mobile number"),
+  instagram: z.string().trim().max(40).optional().or(z.literal("")),
+  citySlug: z.string().trim().max(40),
+  gender: z.enum(["female", "male", "other"]).optional().nullable(),
+});
+
+export const passwordChangeSchema = z.object({
+  current: z.string().min(1, "Enter your current password"),
+  next: z.string().min(6, "Use at least 6 characters").max(100),
+});
+
+export const resetSchema = z.object({
+  token: z.string().min(20).max(200),
+  password: z.string().min(6, "Use at least 6 characters").max(100),
 });

@@ -4,6 +4,7 @@ import { clubs, events, ticketedEvents } from "@/db/schema";
 import { and, eq, gte, sql } from "drizzle-orm";
 import { absUrl } from "@/lib/site";
 import { LIVE_CITIES } from "@/lib/cities";
+import { DEFAULT_OPENINGS } from "@/data/careers";
 
 // Rebuilt hourly so new events and nights show up without a deploy.
 export const revalidate = 3600;
@@ -16,6 +17,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absUrl("/events"), changeFrequency: "daily", priority: 0.9 },
     { url: absUrl("/nights"), changeFrequency: "daily", priority: 0.8 },
     { url: absUrl("/clubs"), changeFrequency: "weekly", priority: 0.8 },
+    { url: absUrl("/careers"), changeFrequency: "weekly", priority: 0.6 },
+    { url: absUrl("/contact"), changeFrequency: "monthly", priority: 0.4 },
+    { url: absUrl("/privacy"), changeFrequency: "yearly", priority: 0.2 },
+    { url: absUrl("/terms"), changeFrequency: "yearly", priority: 0.2 },
+    { url: absUrl("/refunds"), changeFrequency: "yearly", priority: 0.2 },
+    ...DEFAULT_OPENINGS.map((o) => ({ url: absUrl(`/careers/${o.slug}`), changeFrequency: "weekly" as const, priority: 0.5 })),
     ...LIVE_CITIES.flatMap((c) => [
       { url: absUrl(`/dandiya/${c.slug}`), changeFrequency: "daily" as const, priority: 0.9 },
       { url: absUrl(`/events/in/${c.slug}`), changeFrequency: "daily" as const, priority: 0.8 },

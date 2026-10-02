@@ -17,6 +17,17 @@ export type SiteSettings = {
   installPrompt: boolean;
   whatsappFab: boolean;
   homeSections: HomeSection[];
+  /** Shown on the legal and contact pages. */
+  businessName: string;
+  legalName: string;
+  businessAddress: string;
+  supportEmail: string;
+  supportPhone: string;
+  grievanceOfficer: string;
+  grievanceEmail: string;
+  instagram: string;
+  /** Shows a "No booking fee" badge at checkout — only switch on if it's true. */
+  noBookingFee: boolean;
   /** Ads & analytics. Leave blank to switch off. */
   gaId: string;
   metaPixelId: string;
@@ -42,6 +53,15 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   installPrompt: true,
   whatsappFab: true,
   homeSections: HOME_SECTION_DEFAULTS,
+  businessName: "SyncOut",
+  legalName: "",
+  businessAddress: "",
+  supportEmail: "hello@syncout.in",
+  supportPhone: "",
+  grievanceOfficer: "",
+  grievanceEmail: "",
+  instagram: "",
+  noBookingFee: false,
   gaId: process.env.NEXT_PUBLIC_GA_ID ?? "",
   metaPixelId: process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "",
   adsId: process.env.NEXT_PUBLIC_GOOGLE_ADS_ID ?? "",
@@ -81,6 +101,15 @@ export function normalizeSettings(raw: unknown): SiteSettings {
     installPrompt: bool(r.installPrompt, d.installPrompt),
     whatsappFab: bool(r.whatsappFab, d.whatsappFab),
     homeSections: sections,
+    businessName: str(r.businessName, d.businessName) || d.businessName,
+    legalName: str(r.legalName, d.legalName),
+    businessAddress: str(r.businessAddress, d.businessAddress),
+    supportEmail: str(r.supportEmail, d.supportEmail),
+    supportPhone: str(r.supportPhone, d.supportPhone),
+    grievanceOfficer: str(r.grievanceOfficer, d.grievanceOfficer),
+    grievanceEmail: str(r.grievanceEmail, d.grievanceEmail),
+    instagram: str(r.instagram, d.instagram).replace(/^@/, ""),
+    noBookingFee: bool(r.noBookingFee, d.noBookingFee),
     gaId: str(r.gaId, d.gaId),
     metaPixelId: str(r.metaPixelId, d.metaPixelId),
     adsId: str(r.adsId, d.adsId),

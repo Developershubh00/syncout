@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { searchAll } from "@/lib/queries";
 import { ClubCard, NightCard } from "@/components/Cards";
+import { EventCard, toCard } from "@/components/events/EventCard";
+import { MotionCard } from "@/components/motion/Reveal";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Search" };
@@ -33,15 +35,28 @@ export default async function SearchPage({
 
       {!res && (
         <p className="px-4 pt-6 text-[13.5px] text-muted">
-          Try &ldquo;Sector 29&rdquo;, &ldquo;techno&rdquo;, &ldquo;rooftop&rdquo; or a club name.
+          Try &ldquo;dandiya&rdquo;, &ldquo;Noida&rdquo;, &ldquo;Sector 29&rdquo;, &ldquo;rooftop&rdquo; or a club name.
         </p>
       )}
 
-      {res && res.clubs.length === 0 && res.nights.length === 0 && (
+      {res && res.clubs.length === 0 && res.nights.length === 0 && res.events.length === 0 && (
         <p className="px-4 pt-6 text-[13.5px] text-muted">
           Nothing matched &ldquo;{q}&rdquo;. Try a shorter word, or browse{" "}
           <Link href="/clubs" className="text-red-hot">all clubs</Link>.
         </p>
+      )}
+
+      {res && res.events.length > 0 && (
+        <section className="pt-5">
+          <h2 className="px-4 text-[16px] lg:px-0">Events</h2>
+          <div className="mt-3 grid gap-5 px-4 sm:grid-cols-2 lg:grid-cols-3 lg:px-0">
+            {res.events.map((e, i) => (
+              <MotionCard key={e.id} index={i} columns={3}>
+                <EventCard ev={toCard(e)} wide />
+              </MotionCard>
+            ))}
+          </div>
+        </section>
       )}
 
       {res && res.nights.length > 0 && (

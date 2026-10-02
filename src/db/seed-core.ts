@@ -4,7 +4,8 @@
  */
 import { asc } from "drizzle-orm";
 import { db } from "./index";
-import { announcements, cities, clubs, events, settings, ticketTiers, ticketedEvents } from "./schema";
+import { announcements, cities, clubs, events, jobOpenings, settings, ticketTiers, ticketedEvents } from "./schema";
+import { DEFAULT_OPENINGS } from "../data/careers";
 import { CITIES, CLUBS, EVENT_TEMPLATES } from "../data/venues";
 import { NCR_CLUBS } from "../data/venues-ncr";
 import { DANDIYA_2026, DANDIYA_ANNOUNCEMENT } from "../data/events-2026";
@@ -152,4 +153,14 @@ export async function seedNavratri() {
     .values({ key: "site", value: DEFAULT_SETTINGS as unknown as Record<string, unknown> })
     .onConflictDoNothing({ target: settings.key });
   return added;
+}
+
+/** Default job, internship and volunteer openings (skips any slug that exists). */
+export async function seedCareers() {
+  const r = await db
+    .insert(jobOpenings)
+    .values(DEFAULT_OPENINGS.map((o, i) => ({ ...o, sortOrder: i })))
+    .onConflictDoNothing({ target: jobOpenings.slug })
+    .returning({ id: jobOpenings.id });
+  return r.length;
 }

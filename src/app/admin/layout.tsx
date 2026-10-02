@@ -17,6 +17,9 @@ const ADMIN_NAV = [
   { href: "/admin/clubs", label: "Clubs" },
   { href: "/admin/announcements", label: "Popups & banners" },
   { href: "/admin/notify", label: "Message guests" },
+  { href: "/admin/inbox", label: "Inbox" },
+  { href: "/admin/users", label: "Users" },
+  { href: "/admin/careers", label: "Careers" },
   { href: "/admin/offers", label: "Offers" },
   { href: "/admin/settings", label: "Settings" },
 ];

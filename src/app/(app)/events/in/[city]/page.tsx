@@ -18,8 +18,8 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   };
 }
 
-export default async function CityEvents({ params, searchParams }: { params: Promise<{ city: string }>; searchParams: Promise<{ category?: string }> }) {
-  const [{ city }, { category }] = await Promise.all([params, searchParams]);
+export default async function CityEvents({ params, searchParams }: { params: Promise<{ city: string }>; searchParams: Promise<{ category?: string; day?: string }> }) {
+  const [{ city }, { category, day }] = await Promise.all([params, searchParams]);
   if (!isLiveCity(city)) notFound();
   const name = cityName(city);
   return (
@@ -28,6 +28,7 @@ export default async function CityEvents({ params, searchParams }: { params: Pro
       intro={`Everything coming up in ${name} — Navratri Dandiya and Garba nights first, then parties and festivals.`}
       city={city}
       category={CATEGORIES.some((c) => c.id === category) ? category : undefined}
+      day={day}
       basePath="/events"
       faq={dandiyaFaq(city)}
     />

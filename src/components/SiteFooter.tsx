@@ -21,6 +21,17 @@ const cols = [
     ],
   },
   {
+    head: "SyncOut",
+    items: [
+      ["Careers & internships", "/careers"],
+      ["Volunteer", "/careers#volunteer"],
+      ["Contact", "/contact"],
+      ["Privacy", "/privacy"],
+      ["Terms", "/terms"],
+      ["Refunds", "/refunds"],
+    ],
+  },
+  {
     head: "Events",
     items: [
       ["Events in Delhi", "/events/in/new-delhi"],
@@ -34,7 +45,7 @@ const cols = [
 export function SiteFooter() {
   return (
     <footer className="mt-20 hidden border-t border-line lg:block">
-      <div className="mx-auto grid max-w-[1280px] grid-cols-[1.4fr_repeat(3,1fr)] gap-10 px-6 py-14">
+      <div className="mx-auto grid max-w-[1280px] grid-cols-[1.4fr_repeat(4,1fr)] gap-10 px-6 py-14">
         <div>
           <p className="font-display text-[21px] font-extrabold tracking-tight">
             Sync<span className="text-red">Out</span>

@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/db";
-import { clubs, events, offers, bookings, reviews, ticketOrders } from "@/db/schema";
+import { clubs, events, offers, bookings, reviews, ticketOrders, ticketedEvents } from "@/db/schema";
 import { and, asc, desc, eq, gte, lt, sql, ilike, or, count, inArray } from "drizzle-orm";
 import { istNightWindow, istDayStart } from "./guestlist";
 
@@ -219,7 +219,40 @@ async function _searchAll(q: string, citySlug?: string) {
     .orderBy(asc(events.startsAt))
     .limit(20);
 
-  return { clubs: clubHits, nights: nightHits };
+  const eventHits = await db
+    .select({
+      id: ticketedEvents.id,
+      slug: ticketedEvents.slug,
+      title: ticketedEvents.title,
+      poster: ticketedEvents.poster,
+      startsAt: ticketedEvents.startsAt,
+      days: ticketedEvents.days,
+      timeLabel: ticketedEvents.timeLabel,
+      venueName: ticketedEvents.venueName,
+      area: ticketedEvents.area,
+      citySlug: ticketedEvents.citySlug,
+      category: ticketedEvents.category,
+      fromPrice: sql<number | null>`(select min(t.price) from ticket_tiers t where t.event_id = ${ticketedEvents.id} and t.is_active)`.mapWith((v) => (v == null ? null : Number(v))),
+    })
+    .from(ticketedEvents)
+    .where(
+      and(
+        eq(ticketedEvents.isActive, true),
+        sql`coalesce(${ticketedEvents.endsAt}, ${ticketedEvents.startsAt}) >= now()`,
+        citySlug ? eq(ticketedEvents.citySlug, citySlug) : undefined,
+        or(
+          ilike(ticketedEvents.title, term),
+          ilike(ticketedEvents.venueName, term),
+          ilike(ticketedEvents.area, term),
+          ilike(ticketedEvents.category, term),
+          ilike(ticketedEvents.citySlug, term)
+        )
+      )
+    )
+    .orderBy(asc(ticketedEvents.startsAt))
+    .limit(20);
+
+  return { clubs: clubHits, nights: nightHits, events: eventHits };
 }
 
 async function _getUserBookings(userId: string) {
@@ -362,7 +395,8 @@ async function _adminNightOptions() {
     .limit(120);
 }
 
-async function _adminBookings(status?: string, limit = 200, eventId?: string) {
+async function _adminBookings(status?: string, limit = 200, eventId?: string, q?: string) {
+  const term = q?.trim() ? `%${q.trim().replace(/[\\%_]/g, (c) => "\\" + c)}%` : null;
   return db
     .select({
       id: bookings.id,
@@ -391,7 +425,10 @@ async function _adminBookings(status?: string, limit = 200, eventId?: string) {
     .where(
       and(
         status && status !== "all" ? eq(bookings.status, status as "pending") : undefined,
-        eventId ? eq(bookings.eventId, eventId) : undefined
+        eventId ? eq(bookings.eventId, eventId) : undefined,
+        term
+          ? or(ilike(bookings.guestName, term), ilike(bookings.guestPhone, term), ilike(bookings.code, term), ilike(bookings.guestEmail, term))
+          : undefined
       )
     )
     .orderBy(desc(bookings.createdAt))
@@ -411,7 +448,7 @@ export const getEventCounts = safe(_getEventCounts, {
   stag_male: 0,
   group: 0,
 } as Record<string, number>);
-export const searchAll = safe(_searchAll, { clubs: [], nights: [] });
+export const searchAll = safe(_searchAll, { clubs: [], nights: [], events: [] });
 export const getUserBookings = safe(_getUserBookings, []);
 export const getBookingByCode = safe(_getBookingByCode, null);
 export const adminStats = safe(_adminStats, {

@@ -1,5 +1,6 @@
 "use client";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { Portal } from "@/components/ui/Portal";
 import { useEffect, useMemo } from "react";
 import { Check } from "lucide-react";
 
@@ -54,6 +55,7 @@ export function ThankYouSplash({
   }, [open, onDone, autoMs]);
 
   return (
+    <Portal>
     <AnimatePresence>
       {open && (
         <motion.div
@@ -172,5 +174,6 @@ export function ThankYouSplash({
         </motion.div>
       )}
     </AnimatePresence>
+    </Portal>
   );
 }

@@ -4,6 +4,7 @@ import { getAdmin } from "@/lib/session";
 import { adminOrders, adminEvents } from "@/lib/tevents";
 import { OrderRow } from "@/components/admin/OrderRow";
 import { EventFilter } from "@/components/admin/EventFilter";
+import { AdminSearch } from "@/components/admin/AdminSearch";
 import { rs } from "@/lib/event-format";
 
 export const dynamic = "force-dynamic";
@@ -17,10 +18,10 @@ const FILTERS = [
   ["all", "All"],
 ] as const;
 
-export default async function AdminOrders({ searchParams }: { searchParams: Promise<{ status?: string; event?: string }> }) {
+export default async function AdminOrders({ searchParams }: { searchParams: Promise<{ status?: string; event?: string; q?: string }> }) {
   if (!(await getAdmin())) redirect("/admin");
-  const { status = "payment_submitted", event } = await searchParams;
-  const [rows, events] = await Promise.all([adminOrders({ status, eventId: event }), adminEvents()]);
+  const { status = "payment_submitted", event, q } = await searchParams;
+  const [rows, events] = await Promise.all([adminOrders({ status: q ? "all" : status, eventId: event, q }), adminEvents()]);
   const total = rows.filter((r) => r.status === "confirmed" || r.status === "checked_in").reduce((n, r) => n + r.amount, 0);
 
   return (
@@ -44,6 +45,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
 
       <div className="mt-3 px-4 lg:px-0">
         <EventFilter options={events.map((e) => ({ id: e.id, title: e.title, toVerify: e.stats.toVerify, orders: e.stats.orders }))} value={event} status={status} />
+        <AdminSearch placeholder="Find by name, phone, code or UTR" />
       </div>
 
       <div className="rail chips py-3.5">

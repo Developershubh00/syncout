@@ -4,7 +4,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, MapPin, Clock, CalendarDays, Check, Info, Shirt, Users } from "lucide-react";
 import { cachedEvent } from "@/lib/cache";
-import { tierSold, eventDays } from "@/lib/tevents";
+import { tierSold, eventDays, goingCount } from "@/lib/tevents";
+import { ShareButton } from "@/components/ShareButton";
+import { BadgeCheck, MessageCircle, QrCode, Users as UsersIcon, BadgePercent } from "lucide-react";
 import { getSettings } from "@/lib/settings";
 import { getUser } from "@/lib/session";
 import { looksLikeVpa } from "@/lib/upi";
@@ -44,7 +46,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   const [ev, settings, user] = await Promise.all([cachedEvent(slug), getSettings(), getUser()]);
   if (!ev) notFound();
 
-  const sold = await tierSold(ev.id, settings.orderHoldHours);
+  const [sold, going] = await Promise.all([tierSold(ev.id, settings.orderHoldHours), goingCount(ev.id)]);
   const days = eventDays(ev);
   const tiers = ev.tiers.filter((t) => t.isActive);
   const city = cityName(ev.citySlug);
@@ -152,7 +154,14 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             <Chip icon={<CalendarDays className="size-3.5" />}>{datesLabel(ev)}</Chip>
             <Chip icon={<Clock className="size-3.5" />}>{timeLabel(ev)}</Chip>
             {from !== null && <Chip gold>{from ? `from ${rs(from)}` : "Free"}</Chip>}
+            <ShareButton path={`/events/${ev.slug}`} title={ev.title} text={`${ev.title} at ${ev.venueName}, ${datesLabel(ev)} — let's go!`} className="ml-auto" />
           </div>
+
+          {going >= 10 && (
+            <p className="mx-4 mt-3 inline-flex items-center gap-2 rounded-full border border-[#ff2bd6]/30 bg-[#ff2bd6]/10 px-3 py-1.5 text-[12.5px] font-semibold lg:mx-0">
+              <UsersIcon className="size-3.5 text-[#ff6ad5]" /> {going}+ people going through SyncOut
+            </p>
+          )}
 
           {ev.highlights.length > 0 && (
             <Reveal y={16}>
@@ -190,6 +199,19 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             tiers={flowTiers}
             user={user ? { name: user.name, email: user.email } : null}
           />
+
+          <ul className="mx-4 mt-4 grid grid-cols-2 gap-2 text-[12px] lg:mx-0">
+            {[
+              { Icon: BadgeCheck, t: "Pay by UPI, any app" },
+              { Icon: MessageCircle, t: "Confirmed on WhatsApp" },
+              { Icon: QrCode, t: "QR ticket, works offline" },
+              settings.noBookingFee ? { Icon: BadgePercent, t: "No booking fee" } : { Icon: MessageCircle, t: "Real people on WhatsApp" },
+            ].map(({ Icon, t }) => (
+              <li key={t} className="flex items-center gap-2 rounded-xl border border-line bg-surface/70 px-3 py-2 text-muted">
+                <Icon className="size-4 shrink-0 text-gold" /> {t}
+              </li>
+            ))}
+          </ul>
 
           {ev.terms && (
             <details className="mx-4 mt-5 rounded-[18px] border border-line bg-surface/80 p-4 lg:mx-0">

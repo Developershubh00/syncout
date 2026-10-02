@@ -4,8 +4,9 @@ import { DoorScanner } from "@/components/admin/DoorScanner";
 
 export const dynamic = "force-dynamic";
 
-export default async function DoorPage() {
+export default async function DoorPage({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
   if (!(await getAdmin())) redirect("/admin");
+  const { code } = await searchParams;
 
   return (
     <div className="px-4 pt-6">
@@ -14,7 +15,7 @@ export default async function DoorPage() {
         Type the code from the guest&apos;s pass. Approved shows in gold — anything else, send them
         to the paid queue.
       </p>
-      <DoorScanner />
+      <DoorScanner initialCode={code} />
     </div>
   );
 }

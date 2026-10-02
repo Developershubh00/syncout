@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "@/db";
 import { ticketedEvents, ticketTiers, ticketOrders, users } from "@/db/schema";
 import type { OrderStatus, TicketTier } from "@/db/schema";
-import { and, asc, desc, eq, gte, inArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, or, sql } from "drizzle-orm";
 import { istDateKey } from "./guestlist";
 import { safe } from "./queries";
 
@@ -182,7 +182,8 @@ async function _adminEvents() {
   }));
 }
 
-async function _adminOrders(opts: { status?: string; eventId?: string; limit?: number } = {}) {
+async function _adminOrders(opts: { status?: string; eventId?: string; limit?: number; q?: string } = {}) {
+  const term = opts.q?.trim() ? `%${opts.q!.trim().replace(/[\\%_]/g, (c: string) => "\\" + c)}%` : null;
   return db
     .select({ ...orderCols, accountName: users.name })
     .from(ticketOrders)
@@ -191,7 +192,10 @@ async function _adminOrders(opts: { status?: string; eventId?: string; limit?: n
     .where(
       and(
         opts.status && opts.status !== "all" ? eq(ticketOrders.status, opts.status as OrderStatus) : undefined,
-        opts.eventId ? eq(ticketOrders.eventId, opts.eventId) : undefined
+        opts.eventId ? eq(ticketOrders.eventId, opts.eventId) : undefined,
+        term
+          ? or(ilike(ticketOrders.name, term), ilike(ticketOrders.phone, term), ilike(ticketOrders.code, term), ilike(ticketOrders.email, term), ilike(ticketOrders.utr, term))
+          : undefined
       )
     )
     .orderBy(desc(ticketOrders.createdAt))
@@ -212,3 +216,13 @@ export const rawEvents = { listEvents: _listEvents, getEvent: _getEvent };
 
 /** Strict versions for write paths, where a failed read must not look like "nothing". */
 export const strict = { tierSold: _tierSold, getOrder: _getOrder };
+
+/** People with a confirmed or paid booking — real social proof for the event page. */
+async function _goingCount(eventId: string) {
+  const [r] = await db
+    .select({ n: sql<number>`coalesce(sum(${ticketOrders.admits}), 0)`.mapWith(Number) })
+    .from(ticketOrders)
+    .where(and(eq(ticketOrders.eventId, eventId), inArray(ticketOrders.status, ["payment_submitted", "confirmed", "checked_in"])));
+  return r?.n ?? 0;
+}
+export const goingCount = safe(_goingCount, 0);
