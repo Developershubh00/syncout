@@ -8,6 +8,7 @@ import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { AnnouncementPopup, AnnouncementBanner } from "@/components/Announcements";
 import { PromoCapture } from "@/components/PromoCapture";
 import { GuideFab } from "@/components/agent/GuideFab";
+import { Intro } from "@/components/agent/Intro";
 import { Splash } from "@/components/brand/Splash";
 import { Analytics } from "@/components/Analytics";
 import { getUser } from "@/lib/session";
@@ -42,6 +43,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <PromoCapture />
           {settings.installPrompt && <InstallPrompt />}
           {settings.whatsappFab && <GuideFab whatsapp={settings.whatsapp} name={user?.name} signedIn={Boolean(user)} />}
+          <Intro userId={user?.id} name={user?.name} />
           <Analytics gaId={settings.gaId} adsId={settings.adsId} adsLabel={settings.adsLabel} pixelId={settings.metaPixelId} />
         </NotificationsProvider>
       </PwaProvider>

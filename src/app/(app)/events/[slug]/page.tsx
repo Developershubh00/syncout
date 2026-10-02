@@ -206,6 +206,9 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             event={{
               id: ev.id,
               slug: ev.slug,
+              poster: ev.poster,
+              timeText: timeLabel(ev),
+              cityLabel: cityName(ev.citySlug, true),
               title: ev.title,
               venueName: ev.venueName,
               days,
