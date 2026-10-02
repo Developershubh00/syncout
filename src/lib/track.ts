@@ -6,7 +6,7 @@ type W = Window & {
 };
 
 export function track(
-  event: "share" | "begin_checkout" | "booking_requested" | "order_created" | "payment_proof_sent" | "whatsapp_click" | "app_installed",
+  event: "share" | "waitlist_join" | "begin_checkout" | "booking_requested" | "order_created" | "payment_proof_sent" | "whatsapp_click" | "app_installed",
   params: { value?: number; label?: string } = {}
 ) {
   if (typeof window === "undefined") return;

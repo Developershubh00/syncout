@@ -61,7 +61,7 @@ export default async function PassPage({
   const look = LOOK[b.status];
   const cutoff = cutoffFor(new Date(b.startsAt), b.cutoffHour);
   const approved = b.status === "approved" || b.status === "checked_in";
-  const doorQr = approved ? await qrSvg(absUrl(`/admin/door?code=${b.code}`)) : null;
+  const doorQr = approved ? await qrSvg(absUrl(`/door?code=${b.code}`)) : null;
 
   return (
     <>

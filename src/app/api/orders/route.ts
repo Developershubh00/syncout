@@ -7,6 +7,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { orderSchema } from "@/lib/validators";
 import { getUser } from "@/lib/session";
 import { getSettings } from "@/lib/settings";
+import { quotePromo, claimPromo, releasePromo } from "@/lib/promos";
 import { eventDays } from "@/lib/tevents";
 import { dayLabel, rs } from "@/lib/event-format";
 import { looksLikeVpa } from "@/lib/upi";
@@ -46,6 +47,10 @@ export async function POST(req: Request) {
   if (!tier || !tier.isActive) return NextResponse.json({ error: "That ticket type isn't available" }, { status: 409 });
   if (d.quantity > tier.perOrderMax)
     return NextResponse.json({ error: `Up to ${tier.perOrderMax} per booking for this ticket` }, { status: 422 });
+  if (tier.salesStartAt && tier.salesStartAt.getTime() > Date.now())
+    return NextResponse.json({ error: `${tier.name} isn't on sale yet` }, { status: 409 });
+  if (tier.salesEndAt && tier.salesEndAt.getTime() <= Date.now())
+    return NextResponse.json({ error: `${tier.name} sales have ended — pick another ticket` }, { status: 409 });
 
   const user = await getUser();
   if (user) {
@@ -54,7 +59,17 @@ export async function POST(req: Request) {
   }
 
   const settings = await getSettings();
-  const amount = tier.price * d.quantity;
+  const subtotal = tier.price * d.quantity;
+  let discount = 0;
+  let promo: { id: string; code: string } | null = null;
+  if (d.promoCode) {
+    const q = await quotePromo(d.promoCode, { eventId: ev.id, subtotal, quantity: d.quantity });
+    if (!q.ok) return NextResponse.json({ error: q.error }, { status: 422 });
+    if (!(await claimPromo(q.id))) return NextResponse.json({ error: "That code was just used up" }, { status: 409 });
+    discount = q.discount;
+    promo = { id: q.id, code: q.code };
+  }
+  const amount = subtotal - discount;
   let mode: BookingMode = ev.bookingMode;
   if (amount === 0) mode = "free";
   else if (mode === "upi" && !looksLikeVpa(settings.upiVpa) && !settings.upiQrImage) mode = "whatsapp";
@@ -69,12 +84,13 @@ export async function POST(req: Request) {
       const res = await db.execute(sql`
         insert into ticket_orders (
           code, event_id, tier_id, user_id, day, tier_name, quantity, admits, unit_price, amount,
-          name, phone, email, status, mode, note
+          name, phone, email, status, mode, note, subtotal, discount, promo_code
         )
         select
           ${code}, ${ev.id}::uuid, ${tier.id}::uuid, ${user?.id ?? null}::uuid, ${day}, ${tier.name},
           ${d.quantity}::int, ${d.quantity * tier.admits}::int, ${tier.price}::int, ${amount}::int,
-          ${d.name.trim()}, ${d.phone}, ${d.email.toLowerCase()}, ${status}, ${mode}, ${d.note || null}
+          ${d.name.trim()}, ${d.phone}, ${d.email.toLowerCase()}, ${status}, ${mode}, ${d.note || null},
+          ${subtotal}::int, ${discount}::int, ${promo?.code ?? null}
         where ${tier.capacity}::int is null or (
           select coalesce(sum(quantity), 0) from ticket_orders
           where tier_id = ${tier.id}::uuid and coalesce(day, '') = ${day}
@@ -86,13 +102,20 @@ export async function POST(req: Request) {
         returning id, code
       `);
       row = rowsOf<{ id: string; code: string }>(res)[0];
-      if (!row) return NextResponse.json({ error: "Sold out for that date — try another ticket or date" }, { status: 409 });
+      if (!row) {
+        if (promo) await releasePromo(promo.id);
+        return NextResponse.json({ error: "Sold out for that date — try another ticket or date" }, { status: 409 });
+      }
     } catch (e) {
       if (isUniqueViolation(e, "ticket_orders_code_unique")) continue;
+      if (promo) await releasePromo(promo.id);
       throw e;
     }
   }
-  if (!row) return NextResponse.json({ error: "Couldn't save that — please try again" }, { status: 500 });
+  if (!row) {
+    if (promo) await releasePromo(promo.id);
+    return NextResponse.json({ error: "Couldn't save that — please try again" }, { status: 500 });
+  }
 
   const saved = row;
   const url = ticketPath(saved.code);

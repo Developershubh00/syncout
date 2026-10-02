@@ -295,6 +295,13 @@ export const ticketTiers = pgTable(
     perOrderMax: integer("per_order_max").default(10).notNull(),
     isActive: boolean("is_active").default(true).notNull(),
     sortOrder: integer("sort_order").default(0).notNull(),
+    /** Struck-through "was" price, for early-bird and launch offers. */
+    compareAtPrice: integer("compare_at_price"),
+    /** Sale window (early bird ends, phase 2 opens…). Null = always. */
+    salesStartAt: timestamp("sales_start_at", { withTimezone: true }),
+    salesEndAt: timestamp("sales_end_at", { withTimezone: true }),
+    /** Short label on the ticket card: "Early bird", "Best value". */
+    badge: text("badge"),
   },
   (t) => ({ eventIdx: index("tiers_event_idx").on(t.eventId) })
 );
@@ -327,6 +334,12 @@ export const ticketOrders = pgTable(
     confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
     checkedInAt: timestamp("checked_in_at", { withTimezone: true }),
     reviewedBy: text("reviewed_by"),
+    /** Before discount. Null on orders made before promo codes existed. */
+    subtotal: integer("subtotal"),
+    discount: integer("discount").default(0).notNull(),
+    promoCode: text("promo_code"),
+    /** Guest numbers (1…admits) already let in — each friend can carry their own QR. */
+    admitted: jsonb("admitted").$type<number[]>().default([]).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({
@@ -483,6 +496,68 @@ export const jobApplications = pgTable(
   },
   (t) => ({ statusIdx: index("applications_status_idx").on(t.status) })
 );
+
+/* ════════════════════════════════════════════════════════════════
+   v6.4 — promo codes, waitlist, door staff.
+   ════════════════════════════════════════════════════════════════ */
+
+export const promoCodes = pgTable("promo_codes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  code: text("code").notNull().unique(),
+  /** Who it's for — "Riya (Instagram)", "Meta ads Oct" — so sales can be traced. */
+  label: text("label"),
+  /** percent | flat */
+  kind: text("kind").default("percent").notNull(),
+  value: integer("value").notNull(),
+  /** Cap for percent codes, in rupees. */
+  maxDiscount: integer("max_discount"),
+  /** Null = every event. */
+  eventId: uuid("event_id").references(() => ticketedEvents.id, { onDelete: "cascade" }),
+  minQuantity: integer("min_quantity").default(1).notNull(),
+  maxUses: integer("max_uses"),
+  usedCount: integer("used_count").default(0).notNull(),
+  startsAt: timestamp("starts_at", { withTimezone: true }),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const waitlist = pgTable(
+  "waitlist",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    eventId: uuid("event_id")
+      .references(() => ticketedEvents.id, { onDelete: "cascade" })
+      .notNull(),
+    tierId: uuid("tier_id").references(() => ticketTiers.id, { onDelete: "set null" }),
+    tierName: text("tier_name"),
+    day: text("day"),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    name: text("name").notNull(),
+    phone: text("phone").notNull(),
+    email: text("email"),
+    quantity: integer("quantity").default(1).notNull(),
+    /** waiting | notified | booked | removed */
+    status: text("status").default("waiting").notNull(),
+    notifiedAt: timestamp("notified_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({ eventIdx: index("waitlist_event_idx").on(t.eventId), statusIdx: index("waitlist_status_idx").on(t.status) })
+);
+
+export const staff = pgTable("staff", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  phone: text("phone").notNull().unique(),
+  pinHash: text("pin_hash").notNull(),
+  /** door — can look up and check in guests, nothing else. */
+  role: text("role").default("door").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type PromoCode = typeof promoCodes.$inferSelect;
 
 export type JobOpening = typeof jobOpenings.$inferSelect;
 export type Inquiry = typeof inquiries.$inferSelect;

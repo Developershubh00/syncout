@@ -98,3 +98,22 @@ export async function requireAdmin() {
   if (!a) throw new Error("UNAUTHORIZED");
   return a;
 }
+
+/* ── door staff ── */
+export const STAFF_COOKIE = "so_staff";
+export type StaffSession = { staffId: string; name: string };
+
+export async function createStaffSession(s: StaffSession) {
+  const token = await sign({ ...s, staff: true }, "16h");
+  (await cookies()).set(STAFF_COOKIE, token, { ...base, maxAge: 60 * 60 * 16 });
+}
+
+export async function getStaffSession(): Promise<StaffSession | null> {
+  const c = (await cookies()).get(STAFF_COOKIE)?.value;
+  const p = await verify<StaffSession & { staff?: boolean }>(c);
+  return p?.staff && p.staffId ? { staffId: p.staffId, name: p.name } : null;
+}
+
+export async function clearStaffSession() {
+  (await cookies()).delete(STAFF_COOKIE);
+}

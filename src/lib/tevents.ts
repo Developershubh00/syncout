@@ -51,11 +51,13 @@ async function _listEvents(opts: { citySlug?: string; category?: string; limit?:
 
   if (!rows.length) return [];
   const tiers = await db
-    .select({ eventId: ticketTiers.eventId, price: ticketTiers.price, isActive: ticketTiers.isActive })
+    .select({ eventId: ticketTiers.eventId, price: ticketTiers.price, isActive: ticketTiers.isActive, salesStartAt: ticketTiers.salesStartAt, salesEndAt: ticketTiers.salesEndAt })
     .from(ticketTiers)
     .where(inArray(ticketTiers.eventId, rows.map((r) => r.id)));
+  const now = Date.now();
+  const live = tiers.filter((t) => (!t.salesStartAt || t.salesStartAt.getTime() <= now) && (!t.salesEndAt || t.salesEndAt.getTime() > now));
 
-  return rows.map((r) => ({ ...r, fromPrice: fromPrice(tiers.filter((t) => t.eventId === r.id)) }));
+  return rows.map((r) => ({ ...r, fromPrice: fromPrice(live.filter((t) => t.eventId === r.id)) }));
 }
 
 export type EventListRow = Awaited<ReturnType<typeof _listEvents>>[number];
@@ -115,6 +117,10 @@ const orderCols = {
   confirmedAt: ticketOrders.confirmedAt,
   checkedInAt: ticketOrders.checkedInAt,
   createdAt: ticketOrders.createdAt,
+  subtotal: ticketOrders.subtotal,
+  discount: ticketOrders.discount,
+  promoCode: ticketOrders.promoCode,
+  admitted: ticketOrders.admitted,
   eventId: ticketedEvents.id,
   eventSlug: ticketedEvents.slug,
   eventTitle: ticketedEvents.title,

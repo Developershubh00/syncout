@@ -38,6 +38,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         perOrderMax: t.perOrderMax,
         isActive: t.isActive,
         sortOrder: i,
+        compareAtPrice: t.compareAtPrice ?? null,
+        salesStartAt: t.salesStartAt ? new Date(t.salesStartAt) : null,
+        salesEndAt: t.salesEndAt ? new Date(t.salesEndAt) : null,
+        badge: t.badge || null,
       };
       if (t.id) await db.update(ticketTiers).set(v).where(and(eq(ticketTiers.id, t.id), eq(ticketTiers.eventId, id)));
       else await db.insert(ticketTiers).values({ ...v, eventId: id });

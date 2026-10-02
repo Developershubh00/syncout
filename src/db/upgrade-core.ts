@@ -11,6 +11,7 @@ export const REQUIRED_TABLES = [
   "users", "cities", "clubs", "events", "bookings", "offers", "reviews", "favorites",
   "ticketed_events", "ticket_tiers", "ticket_orders", "announcements", "notifications", "push_subscriptions", "settings",
   "password_resets", "inquiries", "job_openings", "job_applications",
+  "promo_codes", "waitlist", "staff",
 ];
 
 export function idempotent(stmt: string): string {

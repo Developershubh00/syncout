@@ -15,18 +15,18 @@ import { datesLabel, timeLabel, rs } from "@/lib/event-format";
 import { toIstInput, fromIstInput, istTonightInput } from "@/lib/ist-input";
 import { slugify } from "@/lib/utils";
 
-type Tier = { id?: string | null; name: string; description: string; price: string; admits: string; capacity: string; perOrderMax: string; isActive: boolean };
+type Tier = { id?: string | null; name: string; description: string; price: string; admits: string; capacity: string; perOrderMax: string; isActive: boolean; compareAtPrice: string; badge: string; salesStartAt: string; salesEndAt: string };
 export type AdminEvent = {
   id: string; slug: string; title: string; category: string; citySlug: string; venueName: string; area: string | null;
   address: string | null; mapUrl: string | null; startsAt: string; endsAt: string | null; days: string[]; timeLabel: string | null;
   poster: string | null; description: string | null; highlights: string[]; organizer: string | null; ageLimit: string | null;
   dressCode: string | null; terms: string | null; bookingMode: "upi" | "whatsapp" | "external" | "free"; externalUrl: string | null;
   sourceUrl: string | null; salesOpen: boolean; isFeatured: boolean; isActive: boolean; sortOrder: number;
-  tiers: { id: string; name: string; description: string | null; price: number; admits: number; capacity: number | null; perOrderMax: number; isActive: boolean }[];
+  tiers: { id: string; name: string; description: string | null; price: number; admits: number; capacity: number | null; perOrderMax: number; isActive: boolean; compareAtPrice?: number | null; badge?: string | null; salesStartAt?: string | Date | null; salesEndAt?: string | Date | null }[];
   stats: { orders: number; confirmed: number; toVerify: number };
 };
 
-const blankTier = (): Tier => ({ name: "Entry pass", description: "", price: "499", admits: "1", capacity: "", perOrderMax: "10", isActive: true });
+const blankTier = (): Tier => ({ name: "Entry pass", description: "", price: "499", admits: "1", capacity: "", perOrderMax: "10", isActive: true, compareAtPrice: "", badge: "", salesStartAt: "", salesEndAt: "" });
 
 const BLANK = {
   title: "", slug: "", category: "dandiya", citySlug: "new-delhi", venueName: "", area: "", address: "", mapUrl: "",
@@ -69,6 +69,8 @@ export function TEventManager({ initial }: { initial: AdminEvent[] }) {
       e.tiers.map((t) => ({
         id: t.id, name: t.name, description: t.description ?? "", price: String(t.price), admits: String(t.admits),
         capacity: t.capacity == null ? "" : String(t.capacity), perOrderMax: String(t.perOrderMax), isActive: t.isActive,
+        compareAtPrice: t.compareAtPrice == null ? "" : String(t.compareAtPrice), badge: t.badge ?? "",
+        salesStartAt: t.salesStartAt ? toIstInput(t.salesStartAt) : "", salesEndAt: t.salesEndAt ? toIstInput(t.salesEndAt) : "",
       }))
     );
     setOpen(true);
@@ -118,6 +120,10 @@ export function TEventManager({ initial }: { initial: AdminEvent[] }) {
           capacity: t.capacity === "" ? null : Math.max(0, Math.round(Number(t.capacity))),
           perOrderMax: Math.max(1, Math.round(Number(t.perOrderMax) || 10)),
           isActive: t.isActive,
+          compareAtPrice: t.compareAtPrice === "" ? null : Math.max(0, Math.round(Number(t.compareAtPrice) || 0)) || null,
+          badge: t.badge.trim() || null,
+          salesStartAt: fromIstInput(t.salesStartAt),
+          salesEndAt: fromIstInput(t.salesEndAt),
         })),
       };
       const res = await fetch(editing ? `/api/admin/tevents/${editing.id}` : "/api/admin/tevents", {
@@ -260,6 +266,21 @@ export function TEventManager({ initial }: { initial: AdminEvent[] }) {
                     <Small label="Max/order" value={t.perOrderMax} onChange={(v) => setTier(i, { perOrderMax: v })} />
                   </div>
                   <input value={t.description} onChange={(e) => setTier(i, { description: e.target.value })} placeholder="Short note (optional)" className="mt-2 h-9 w-full rounded-lg border border-line bg-raised px-3 text-[12.5px]" />
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <Small label="Was ₹ (crossed out)" value={t.compareAtPrice} onChange={(v) => setTier(i, { compareAtPrice: v })} placeholder="—" />
+                    <label className="block">
+                      <span className="text-[10.5px] text-faint">Badge</span>
+                      <input value={t.badge} onChange={(e) => setTier(i, { badge: e.target.value })} placeholder="Early bird" className="h-9 w-full rounded-lg border border-line bg-raised px-2.5 text-[12.5px]" />
+                    </label>
+                    <label className="block">
+                      <span className="text-[10.5px] text-faint">Sale starts (IST)</span>
+                      <input type="datetime-local" value={t.salesStartAt} onChange={(e) => setTier(i, { salesStartAt: e.target.value })} className="h-9 w-full rounded-lg border border-line bg-raised px-2 text-[12px]" />
+                    </label>
+                    <label className="block">
+                      <span className="text-[10.5px] text-faint">Sale ends (IST) — countdown</span>
+                      <input type="datetime-local" value={t.salesEndAt} onChange={(e) => setTier(i, { salesEndAt: e.target.value })} className="h-9 w-full rounded-lg border border-line bg-raised px-2 text-[12px]" />
+                    </label>
+                  </div>
                   <div className="mt-2"><Toggle label="On sale" on={t.isActive} onChange={(v) => setTier(i, { isActive: v })} /></div>
                 </div>
               ))}

@@ -14,6 +14,7 @@ import { cityName } from "@/lib/cities";
 import { PaymentPanel } from "@/components/events/PaymentPanel";
 import { PartyBackground } from "@/components/fx/Backgrounds";
 import { TicketQr } from "@/components/TicketQr";
+import { SplitPasses } from "@/components/SplitPasses";
 import { AddToCalendar } from "@/components/AddToCalendar";
 import { ShareButton } from "@/components/ShareButton";
 import { absUrl } from "@/lib/site";
@@ -54,7 +55,8 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
   const confirmed = o.status === "confirmed" || o.status === "checked_in";
   const payable = o.status === "awaiting_payment" || o.status === "payment_submitted";
   const look = ORDER_STATUS[o.status];
-  const doorQr = confirmed ? await qrSvg(absUrl(`/admin/door?code=${o.code}`)) : null;
+  const doorQr = confirmed ? await qrSvg(absUrl(`/door?code=${o.code}`)) : null;
+  const admitted = Array.isArray(o.admitted) ? o.admitted : [];
   const startAt = (() => {
     const base = new Date(o.startsAt);
     const ist = new Date(base.getTime() + 330 * 60000);
@@ -107,12 +109,14 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
               <p className={`mt-1 font-display text-[32px] font-extrabold leading-none tracking-[0.14em] ${confirmed ? "text-gold" : "text-text"}`}>{o.code}</p>
               {confirmed && <p className="mt-2 text-[11.5px] text-muted">Admits {o.admits}</p>}
             </div>
-            {doorQr && <TicketQr svg={doorQr} caption="Brightness up, and show this with a photo ID. It opens offline once you've viewed it here." />}
+            {doorQr && <TicketQr svg={doorQr} caption={o.admits > 1 ? `Lets in all ${o.admits} at once — or send each friend their own pass below.` : "Brightness up, and show this with a photo ID. It opens offline once you've viewed it here."} />}
+            {o.discount > 0 && <p className="mt-3 text-[12.5px] font-semibold text-gold">Code {o.promoCode} saved you {rs(o.discount)}</p>}
           </div>
         </div>
 
         {confirmed && (
           <div className="mt-4 space-y-2.5">
+            <SplitPasses code={o.code} admits={o.admits} admitted={admitted} title={o.eventTitle} when={o.day ? dayLabel(o.day) : ""} />
             <AddToCalendar
               title={o.eventTitle}
               start={startAt}

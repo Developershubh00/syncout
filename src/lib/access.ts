@@ -13,13 +13,13 @@ function key() {
   return process.env.AUTH_SECRET || (process.env.NODE_ENV !== "production" ? "dev-only-insecure-secret-change-me" : "");
 }
 
-export function accessToken(kind: "pass" | "ticket", code: string): string | null {
+export function accessToken(kind: "pass" | "ticket" | "guest", code: string): string | null {
   const k = key();
   if (!k) return null;
   return crypto.createHmac("sha256", k).update(`${kind}:${code.toUpperCase()}`).digest("base64url").slice(0, 22);
 }
 
-export function hasAccess(kind: "pass" | "ticket", code: string, token?: string | null) {
+export function hasAccess(kind: "pass" | "ticket" | "guest", code: string, token?: string | null) {
   const expected = accessToken(kind, code);
   if (!expected || !token || token.length !== expected.length) return false;
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(token));
@@ -33,4 +33,10 @@ export function passPath(code: string) {
 export function ticketPath(code: string) {
   const k = accessToken("ticket", code);
   return `/tickets/${code}${k ? `?k=${k}` : ""}`;
+}
+
+/** One friend's own pass inside a group ticket: /tickets/T…/guest/3?k=… */
+export function guestPath(code: string, n: number) {
+  const k = accessToken("guest", `${code}:${n}`);
+  return `/tickets/${code}/guest/${n}${k ? `?k=${k}` : ""}`;
 }

@@ -6,7 +6,8 @@ import { ChevronLeft, MapPin, Clock, CalendarDays, Check, Info, Shirt, Users } f
 import { cachedEvent } from "@/lib/cache";
 import { tierSold, eventDays, goingCount } from "@/lib/tevents";
 import { ShareButton } from "@/components/ShareButton";
-import { BadgeCheck, MessageCircle, QrCode, Users as UsersIcon, BadgePercent } from "lucide-react";
+import { BadgeCheck, MessageCircle, QrCode, Users as UsersIcon, BadgePercent, Timer } from "lucide-react";
+import { CountdownChip } from "@/components/events/Countdown";
 import { getSettings } from "@/lib/settings";
 import { getUser } from "@/lib/session";
 import { looksLikeVpa } from "@/lib/upi";
@@ -52,7 +53,10 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   const city = cityName(ev.citySlug);
   const end = ev.endsAt ?? new Date(new Date(ev.startsAt).getTime() + 6 * 3600e3);
   const over = Date.now() > new Date(end).getTime();
-  const from = tiers.length ? Math.min(...tiers.map((t) => t.price)) : null;
+  const nowMs = Date.now();
+  const onSale = tiers.filter((t) => (!t.salesStartAt || new Date(t.salesStartAt).getTime() <= nowMs) && (!t.salesEndAt || new Date(t.salesEndAt).getTime() > nowMs));
+  const from = onSale.length ? Math.min(...onSale.map((t) => t.price)) : tiers.length ? Math.min(...tiers.map((t) => t.price)) : null;
+  const earlyBird = onSale.filter((t) => t.salesEndAt).sort((a, b) => new Date(a.salesEndAt!).getTime() - new Date(b.salesEndAt!).getTime())[0];
 
   // Tickets left per tier per day (capacity is "per day").
   const flowTiers: FlowTier[] = tiers.map((t) => ({
@@ -63,6 +67,10 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
     admits: t.admits,
     perOrderMax: t.perOrderMax,
     left: t.capacity == null ? null : Object.fromEntries(days.map((d) => [d, Math.max(0, t.capacity! - (sold[`${t.id}|${d}`] ?? 0))])),
+    compareAtPrice: t.compareAtPrice,
+    badge: t.badge,
+    salesStartAt: t.salesStartAt ? new Date(t.salesStartAt).toISOString() : null,
+    salesEndAt: t.salesEndAt ? new Date(t.salesEndAt).toISOString() : null,
   }));
 
   const mapHref = ev.mapUrl || `https://maps.google.com/?q=${encodeURIComponent(`${ev.venueName} ${ev.address ?? ev.area ?? ""} ${city}`)}`;
@@ -156,6 +164,15 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             {from !== null && <Chip gold>{from ? `from ${rs(from)}` : "Free"}</Chip>}
             <ShareButton path={`/events/${ev.slug}`} title={ev.title} text={`${ev.title} at ${ev.venueName}, ${datesLabel(ev)} — let's go!`} className="ml-auto" />
           </div>
+
+          {earlyBird?.salesEndAt && (
+            <CountdownChip
+              until={new Date(earlyBird.salesEndAt).toISOString()}
+              prefix={`${earlyBird.badge || earlyBird.name} · ${rs(earlyBird.price)} ends in`}
+              icon={<Timer className="size-3.5" />}
+              className="mx-4 mt-3 inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-[12.5px] font-semibold text-gold lg:mx-0"
+            />
+          )}
 
           {going >= 10 && (
             <p className="mx-4 mt-3 inline-flex items-center gap-2 rounded-full border border-[#ff2bd6]/30 bg-[#ff2bd6]/10 px-3 py-1.5 text-[12.5px] font-semibold lg:mx-0">

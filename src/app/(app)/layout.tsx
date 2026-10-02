@@ -6,6 +6,7 @@ import { NotificationsProvider } from "@/components/notify/NotificationsProvider
 import { PwaProvider } from "@/components/pwa/PwaProvider";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { AnnouncementPopup, AnnouncementBanner } from "@/components/Announcements";
+import { PromoCapture } from "@/components/PromoCapture";
 import { WhatsAppFab } from "@/components/WhatsAppFab";
 import { Analytics } from "@/components/Analytics";
 import { getUser } from "@/lib/session";
@@ -36,6 +37,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <SiteFooter />
           <TabBar />
           <AnnouncementPopup items={items} signedIn={Boolean(user)} />
+          <PromoCapture />
           {settings.installPrompt && <InstallPrompt />}
           {settings.whatsappFab && <WhatsAppFab number={settings.whatsapp} />}
           <Analytics gaId={settings.gaId} adsId={settings.adsId} adsLabel={settings.adsLabel} pixelId={settings.metaPixelId} />

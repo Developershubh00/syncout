@@ -1,8 +1,10 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, ExternalLink, Lock, Minus, Plus, Ticket, MessageCircle } from "lucide-react";
+import { ArrowRight, ExternalLink, Lock, Minus, Plus, Ticket, MessageCircle, BellRing, TicketPercent } from "lucide-react";
+import { Countdown, useNow } from "@/components/events/Countdown";
+import { readSavedPromo } from "@/components/PromoCapture";
 import { Sheet, SheetFooter } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Field";
@@ -21,6 +23,11 @@ export type FlowTier = {
   perOrderMax: number;
   /** Tickets left per day, null = no cap. */
   left: Record<string, number> | null;
+  compareAtPrice?: number | null;
+  badge?: string | null;
+  /** ISO — sale window for early-bird / phased tickets. */
+  salesStartAt?: string | null;
+  salesEndAt?: string | null;
 };
 
 export type FlowEvent = {
@@ -47,12 +54,89 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [done, setDone] = useState<{ code: string; url: string; mode: string } | null>(null);
   const [form, setForm] = useState({ name: user?.name ?? "", phone: "", email: user?.email ?? "", note: "" });
+  const now = useNow(1000);
+  const [promoInput, setPromoInput] = useState("");
+  const [promo, setPromo] = useState<{ code: string; label: string; discount: number; key: string } | null>(null);
+  const [promoErr, setPromoErr] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [wait, setWait] = useState<{ tierId: string; tierName: string } | null>(null);
+  const [waitDone, setWaitDone] = useState(false);
+
+  useEffect(() => {
+    const saved = readSavedPromo();
+    if (saved) setPromoInput(saved);
+  }, []);
 
   const tier = tiers.find((t) => t.id === tierId) ?? null;
   const leftFor = (t: FlowTier) => (t.left ? t.left[day] ?? null : null);
   const max = tier ? Math.max(0, Math.min(tier.perOrderMax, leftFor(tier) ?? tier.perOrderMax)) : 1;
-  const total = tier ? tier.price * qty : 0;
-  const from = useMemo(() => (tiers.length ? Math.min(...tiers.map((t) => t.price)) : 0), [tiers]);
+  const subtotal = tier ? tier.price * qty : 0;
+  // A quote is only good for the exact ticket and count it was made for.
+  const quoteKey = `${tierId}|${qty}`;
+  const discount = promo && promo.key === quoteKey ? promo.discount : 0;
+  const total = subtotal - discount;
+  const saleState = (t: FlowTier): "soon" | "ended" | "on" => {
+    const n = now ?? Date.now();
+    if (t.salesStartAt && new Date(t.salesStartAt).getTime() > n) return "soon";
+    if (t.salesEndAt && new Date(t.salesEndAt).getTime() <= n) return "ended";
+    return "on";
+  };
+  const from = useMemo(() => {
+    const live = tiers.filter((t) => saleState(t) === "on");
+    return live.length ? Math.min(...live.map((t) => t.price)) : tiers.length ? Math.min(...tiers.map((t) => t.price)) : 0;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tiers, now === null]);
+
+  async function applyPromo(code = promoInput) {
+    if (!tier || !code.trim()) return;
+    setChecking(true);
+    setPromoErr(null);
+    try {
+      const res = await fetch("/api/promos/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: code.trim(), eventId: event.id, tierId: tier.id, quantity: qty }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "That code isn't valid");
+      setPromo({ code: data.code, label: data.label, discount: data.discount, key: quoteKey });
+    } catch (e) {
+      setPromo(null);
+      setPromoErr(e instanceof Error ? e.message : "That code isn't valid");
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  // Entering review with a saved/typed code: apply it for this ticket and count.
+  useEffect(() => {
+    if (step === 2 && promoInput && (!promo || promo.key !== quoteKey)) applyPromo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, quoteKey]);
+
+  async function joinWaitlist() {
+    if (!wait) return;
+    if (form.name.trim().length < 2 || !/^[6-9]\d{9}$/.test(form.phone.trim())) {
+      setErrors({ name: form.name.trim().length < 2 ? "Tell us your name" : "", phone: /^[6-9]\d{9}$/.test(form.phone.trim()) ? "" : "10-digit Indian mobile number" });
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId: event.id, tierId: wait.tierId, day, name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim(), quantity: qty }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Couldn't add you");
+      setWaitDone(true);
+      track("waitlist_join", { label: event.title });
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Couldn't add you", "err");
+    } finally {
+      setBusy(false);
+    }
+  }
   const mode = total === 0 ? "free" : event.bookingMode === "upi" && !event.upiReady ? "whatsapp" : event.bookingMode;
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -83,6 +167,7 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
           phone: form.phone.trim(),
           email: form.email.trim(),
           note: form.note,
+          promoCode: discount ? promo?.code : undefined,
         }),
       });
       const data = await res.json();
@@ -134,7 +219,7 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
         </button>
       </div>
 
-      <Sheet open={open} onClose={() => setOpen(false)} title={step === 0 ? "Pick your tickets" : step === 1 ? "Your details" : "Check and book"}>
+      <Sheet open={open} onClose={() => setOpen(false)} title={step === 0 ? "Pick your tickets" : step === 1 ? "Your details" : step === 3 ? "Join the waitlist" : "Check and book"}>
         <p className="-mt-1 mb-4 text-[12.5px] text-muted">
           {event.title} · {event.venueName}
         </p>
@@ -169,32 +254,51 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
                 {tiers.map((t) => {
                   const left = leftFor(t);
                   const soldOut = left !== null && left <= 0;
-                  const active = t.id === tierId;
+                  const sale = saleState(t);
+                  const unavailable = soldOut || sale !== "on";
+                  const active = t.id === tierId && !unavailable;
                   return (
-                    <button
-                      key={t.id}
-                      disabled={soldOut}
-                      onClick={() => {
-                        setTierId(t.id);
-                        setQty(1);
-                      }}
-                      className={cn(
-                        "flex w-full items-center gap-3.5 rounded-2xl border p-4 text-left transition-colors",
-                        active ? "border-[#ff2bd6] bg-[#ff2bd6]/10" : "border-line bg-raised",
-                        soldOut && "opacity-40"
-                      )}
-                    >
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-[15px] font-semibold">{t.name}</span>
-                        <span className="block text-[12px] text-muted">
-                          {t.description || (t.admits > 1 ? `Admits ${t.admits}` : "Admits 1")}
+                    <div key={t.id} className={cn("rounded-2xl border transition-colors", active ? "border-[#ff2bd6] bg-[#ff2bd6]/10" : "border-line bg-raised", unavailable && "opacity-70")}>
+                      <button
+                        disabled={unavailable}
+                        onClick={() => {
+                          setTierId(t.id);
+                          setQty(1);
+                        }}
+                        className="flex w-full items-center gap-3.5 p-4 text-left"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-[15px] font-semibold">{t.name}</span>
+                            {t.badge && <span className="rounded-md bg-gold/15 px-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-gold">{t.badge}</span>}
+                          </span>
+                          <span className="block text-[12px] text-muted">{t.description || (t.admits > 1 ? `Admits ${t.admits}` : "Admits 1")}</span>
+                          {sale === "on" && t.salesEndAt && !soldOut && (
+                            <Countdown until={t.salesEndAt} prefix="Price ends in" className="mt-1 flex items-center gap-1 text-[11.5px] text-[#ff6ad5]" />
+                          )}
+                          {sale === "soon" && t.salesStartAt && <Countdown until={t.salesStartAt} prefix="Opens in" className="mt-1 block text-[11.5px] text-muted" />}
                         </span>
-                      </span>
-                      <span className="shrink-0 text-right">
-                        <span className="block text-[14px] font-bold text-gold">{rs(t.price)}</span>
-                        <span className="block text-[11px] text-faint">{soldOut ? "Sold out" : left !== null && left < 20 ? `${left} left` : ""}</span>
-                      </span>
-                    </button>
+                        <span className="shrink-0 text-right">
+                          {t.compareAtPrice && t.compareAtPrice > t.price && <span className="block text-[11.5px] text-faint line-through">{rs(t.compareAtPrice)}</span>}
+                          <span className="block text-[14px] font-bold text-gold">{rs(t.price)}</span>
+                          <span className="block text-[11px] text-faint">
+                            {sale === "ended" ? "Ended" : soldOut ? "Sold out" : left !== null && left < 20 ? `${left} left` : t.compareAtPrice && t.compareAtPrice > t.price ? `Save ${rs(t.compareAtPrice - t.price)}` : ""}
+                          </span>
+                        </span>
+                      </button>
+                      {soldOut && sale === "on" && (
+                        <button
+                          onClick={() => {
+                            setWait({ tierId: t.id, tierName: t.name });
+                            setWaitDone(false);
+                            setStep(3);
+                          }}
+                          className="mx-4 mb-3.5 -mt-1 inline-flex items-center gap-1.5 rounded-full border border-[#ff2bd6]/50 px-3 py-1.5 text-[12.5px] font-semibold text-[#ff6ad5]"
+                        >
+                          <BellRing className="size-3.5" /> Join the waitlist
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -250,8 +354,32 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
                 <Row k="Tickets" v={`${qty} × ${tier.name}`} />
                 <Row k="Name" v={form.name} />
                 <Row k="Mobile" v={form.phone} />
+                {discount > 0 && <Row k="Subtotal" v={rs(subtotal)} />}
+                {discount > 0 && <Row k={`Code ${promo?.code}`} v={`−${rs(discount)}`} />}
                 <Row k="Total" v={rs(total)} strong />
               </dl>
+
+              <div className="mt-3 rounded-2xl border border-dashed border-line p-3">
+                {discount > 0 ? (
+                  <div className="flex items-center gap-2 text-[13px]">
+                    <TicketPercent className="size-4 shrink-0 text-gold" />
+                    <span className="min-w-0 flex-1 truncate"><b>{promo?.label}</b> — you save {rs(discount)}</span>
+                    <button onClick={() => { setPromo(null); setPromoInput(""); try { localStorage.removeItem("so_promo"); } catch {} }} className="text-[12px] text-muted underline">Remove</button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <TicketPercent className="size-4 shrink-0 text-faint" />
+                    <input
+                      value={promoInput}
+                      onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoErr(null); }}
+                      placeholder="Promo code"
+                      className="h-9 min-w-0 flex-1 bg-transparent text-[13.5px] uppercase outline-none placeholder:normal-case placeholder:text-faint"
+                    />
+                    <Button size="sm" variant="ghost" loading={checking} disabled={!promoInput.trim()} onClick={() => applyPromo()}>Apply</Button>
+                  </div>
+                )}
+                {promoErr && <p className="mt-1.5 text-[12px] text-red-hot">{promoErr}</p>}
+              </div>
               <div className="mt-4 rounded-2xl border border-line bg-surface p-4 text-[12.5px] leading-relaxed text-muted">
                 {mode === "upi" && <p>Next you&apos;ll see a UPI QR for {rs(total)}. Pay from any UPI app, then send us the screenshot on WhatsApp — we confirm your tickets right after.</p>}
                 {mode === "whatsapp" && (
@@ -269,6 +397,35 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
                   <Button size="lg" full loading={busy} onClick={submit}>Book now · {rs(total)}</Button>
                 </div>
               </SheetFooter>
+            </motion.div>
+          )}
+
+          {step === 3 && wait && (
+            <motion.div key="s3" className="space-y-3.5" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.22 }}>
+              {waitDone ? (
+                <div className="py-6 text-center">
+                  <BellRing className="mx-auto size-10 text-gold" />
+                  <p className="mt-3 text-[16px] font-semibold">You&apos;re on the waitlist</p>
+                  <p className="mx-auto mt-1 max-w-[30ch] text-[13px] text-muted">
+                    If {wait.tierName} opens up for {dayLabel(day)}, we&apos;ll message you first on WhatsApp{user ? " and in the app" : ""}.
+                  </p>
+                  <Button variant="ghost" className="mt-5" onClick={() => setStep(0)}>See other tickets</Button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-[13px] leading-relaxed text-muted">
+                    <b className="text-text">{wait.tierName}</b> is sold out for {dayLabel(day)}. Leave your number — when spots free up, the waitlist hears first.
+                  </p>
+                  <Input label="Full name" value={form.name} onChange={set("name")} error={errors.name || undefined} autoComplete="name" />
+                  <Input label="Mobile (WhatsApp)" inputMode="numeric" value={form.phone} onChange={set("phone")} error={errors.phone || undefined} autoComplete="tel" />
+                  <SheetFooter>
+                    <div className="flex gap-2.5">
+                      <Button variant="ghost" size="lg" onClick={() => setStep(0)}>Back</Button>
+                      <Button size="lg" full loading={busy} onClick={joinWaitlist}><BellRing className="size-4" /> Notify me · {qty}</Button>
+                    </div>
+                  </SheetFooter>
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

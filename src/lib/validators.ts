@@ -106,6 +106,10 @@ export const tierSchema = z.object({
   capacity: z.number().int().min(0).max(100_000).optional().nullable(),
   perOrderMax: z.number().int().min(1).max(50).default(10),
   isActive: z.boolean().default(true),
+  compareAtPrice: z.number().int().min(0).max(1_000_000).optional().nullable(),
+  salesStartAt: z.string().datetime({ offset: true }).optional().nullable(),
+  salesEndAt: z.string().datetime({ offset: true }).optional().nullable(),
+  badge: z.string().trim().max(24).optional().nullable(),
 });
 
 export const ticketedEventSchema = z.object({
@@ -148,6 +152,7 @@ export const orderSchema = z.object({
   phone,
   email: z.string().trim().email("That email doesn't look right").max(120),
   note: z.string().max(300).optional().or(z.literal("")),
+  promoCode: z.string().trim().max(30).optional().or(z.literal("")),
 });
 
 export const orderPaidSchema = z.object({
@@ -303,4 +308,46 @@ export const passwordChangeSchema = z.object({
 export const resetSchema = z.object({
   token: z.string().min(20).max(200),
   password: z.string().min(6, "Use at least 6 characters").max(100),
+});
+
+/* ── v6.4 ───────────────────────────────────────────────────── */
+
+export const promoBaseSchema = z.object({
+  code: z.string().trim().min(3, "At least 3 characters").max(30).regex(/^[A-Za-z0-9_-]+$/, "Letters, numbers, - and _ only"),
+  label: z.string().trim().max(80).optional().nullable(),
+  kind: z.enum(["percent", "flat"]),
+  value: z.number().int().min(1).max(100_000),
+  maxDiscount: z.number().int().min(1).max(100_000).optional().nullable(),
+  eventId: z.string().uuid().optional().nullable(),
+  minQuantity: z.number().int().min(1).max(50).default(1),
+  maxUses: z.number().int().min(1).max(1_000_000).optional().nullable(),
+  startsAt: z.string().datetime({ offset: true }).optional().nullable(),
+  endsAt: z.string().datetime({ offset: true }).optional().nullable(),
+  isActive: z.boolean().default(true),
+});
+export const promoSchema = promoBaseSchema.refine((p) => p.kind !== "percent" || p.value <= 100, {
+  message: "A percent code can't be more than 100%",
+  path: ["value"],
+});
+
+export const waitlistSchema = z.object({
+  eventId: z.string().uuid(),
+  tierId: z.string().uuid().optional().nullable(),
+  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  name: z.string().trim().min(2, "Tell us your name").max(60),
+  phone: z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a 10-digit Indian mobile number"),
+  email: z.string().trim().email().max(120).optional().or(z.literal("")),
+  quantity: z.number().int().min(1).max(20).default(1),
+});
+
+export const staffSchema = z.object({
+  name: z.string().trim().min(2).max(60),
+  phone: z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a 10-digit Indian mobile number"),
+  pin: z.string().regex(/^\d{4,8}$/, "PIN must be 4–8 digits").optional(),
+  isActive: z.boolean().optional(),
+});
+
+export const staffLoginSchema = z.object({
+  phone: z.string().trim().regex(/^[6-9]\d{9}$/, "Enter your 10-digit mobile number"),
+  pin: z.string().regex(/^\d{4,8}$/, "Enter your PIN"),
 });

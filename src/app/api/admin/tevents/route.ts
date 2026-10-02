@@ -35,6 +35,10 @@ export async function POST(req: Request) {
           perOrderMax: t.perOrderMax,
           isActive: t.isActive,
           sortOrder: i,
+          compareAtPrice: t.compareAtPrice ?? null,
+          salesStartAt: t.salesStartAt ? new Date(t.salesStartAt) : null,
+          salesEndAt: t.salesEndAt ? new Date(t.salesEndAt) : null,
+          badge: t.badge || null,
         }))
       );
     }
