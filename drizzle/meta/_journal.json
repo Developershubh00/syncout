@@ -36,6 +36,13 @@
       "when": 1790906450696,
       "tag": "0004_v65_alerts_auto_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790929134651,
+      "tag": "0005_v66_galleria_clubs",
+      "breakpoints": true
     }
   ]
 }

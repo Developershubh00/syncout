@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/brand/Logo";
 
 /* Internal links double as SEO: every city landing page is one hop from anywhere. */
 const cols = [
@@ -47,9 +48,7 @@ export function SiteFooter() {
     <footer className="mt-20 hidden border-t border-line lg:block">
       <div className="mx-auto grid max-w-[1280px] grid-cols-[1.4fr_repeat(4,1fr)] gap-10 px-6 py-14">
         <div>
-          <p className="font-display text-[21px] font-extrabold tracking-tight">
-            Sync<span className="text-red">Out</span>
-          </p>
+          <Logo size="md" hello={false} />
           <p className="mt-3 max-w-[38ch] text-[13px] leading-relaxed text-muted">
             Guestlists, club nights and Dandiya events across Delhi, Gurugram and Noida. 21+ with a government photo ID
             for clubs. Entry stays at the venue&apos;s discretion and guestlists close at 6 PM on the day.

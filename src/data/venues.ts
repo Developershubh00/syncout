@@ -17,13 +17,15 @@ export type SeedClub = {
   coverImage: string;
   musicTypes: string[];
   tags: string[];
-  priceForTwo: number;
+  priceForTwo: number | null;
   openTime: string;
   closeTime: string;
   dressCode?: string;
-  rating: number;
+  /** null = not rated yet (we don't invent ratings). */
+  rating: number | null;
   reviewCount: number;
   isFeatured?: boolean;
+  inHouse?: boolean;
 };
 
 export const CITIES = [

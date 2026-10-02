@@ -7,7 +7,8 @@ import { PwaProvider } from "@/components/pwa/PwaProvider";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { AnnouncementPopup, AnnouncementBanner } from "@/components/Announcements";
 import { PromoCapture } from "@/components/PromoCapture";
-import { WhatsAppFab } from "@/components/WhatsAppFab";
+import { GuideFab } from "@/components/agent/GuideFab";
+import { Splash } from "@/components/brand/Splash";
 import { Analytics } from "@/components/Analytics";
 import { getUser } from "@/lib/session";
 import { getSettings } from "@/lib/settings";
@@ -28,6 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <ToastHost>
       <PwaProvider>
         <NotificationsProvider signedIn={Boolean(user)}>
+          <Splash />
           <DesktopNav initials={initials} />
           <AnnouncementBanner items={items} signedIn={Boolean(user)} />
           {/* max-w-lg keeps the phone layout untouched; lg widens to the desktop grid */}
@@ -39,7 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <AnnouncementPopup items={items} signedIn={Boolean(user)} />
           <PromoCapture />
           {settings.installPrompt && <InstallPrompt />}
-          {settings.whatsappFab && <WhatsAppFab number={settings.whatsapp} />}
+          {settings.whatsappFab && <GuideFab whatsapp={settings.whatsapp} name={user?.name} signedIn={Boolean(user)} />}
           <Analytics gaId={settings.gaId} adsId={settings.adsId} adsLabel={settings.adsLabel} pixelId={settings.metaPixelId} />
         </NotificationsProvider>
       </PwaProvider>

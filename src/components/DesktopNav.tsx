@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notify/NotificationBell";
 import { InstallButton } from "@/components/pwa/InstallButton";
+import { Logo } from "@/components/brand/Logo";
 
 const links = [
   { href: "/events", label: "Events", party: true },
@@ -22,8 +23,8 @@ export function DesktopNav({ initials = "" }: { initials?: string }) {
   return (
     <header className="sticky top-0 z-40 hidden border-b border-line bg-ink/85 backdrop-blur-xl lg:block">
       <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-7 px-6">
-        <Link href="/" className="font-display text-[21px] font-extrabold tracking-tight">
-          Sync<span className="text-red">Out</span>
+        <Link href="/" aria-label="SyncOut home">
+          <Logo size="sm" />
         </Link>
 
         <nav className="flex items-center gap-1">

@@ -59,7 +59,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-IN" className={`${sans.variable} ${display.variable}`}>
+    <html lang="en-IN" className={`${sans.variable} ${display.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: "try{sessionStorage.getItem('so_splash')&&document.documentElement.classList.add('no-splash')}catch(e){}" }} />
+      </head>
       <body>
         {children}
         <SpeedInsights />

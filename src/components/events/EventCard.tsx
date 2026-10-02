@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin } from "lucide-react";
+import { CalendarDays, MapPin } from "lucide-react";
 import { datesLabel, timeLabel, rs } from "@/lib/event-format";
 import { categoryLabel } from "@/lib/event-labels";
 import { cityName } from "@/lib/cities";
@@ -22,35 +22,38 @@ export type EventCardData = {
 
 export function EventCard({ ev, wide, priority }: { ev: EventCardData; wide?: boolean; priority?: boolean }) {
   return (
-    <Link href={`/events/${ev.slug}`} className={cn("group block", wide ? "w-full" : "w-[280px]")}>
-      <div className="ev-card relative aspect-[16/10] overflow-hidden rounded-[20px] bg-raised">
+    <Link
+      href={`/events/${ev.slug}`}
+      className={cn(
+        "group block rounded-[26px] border border-white/[0.06] bg-surface p-2.5 shadow-[0_14px_34px_-22px_rgba(0,0,0,.95)] transition-colors hover:border-[#ff2bd6]/30",
+        wide ? "w-full" : "w-[272px]"
+      )}
+    >
+      <div className={cn("ev-card relative overflow-hidden rounded-[20px] bg-raised", wide ? "aspect-[16/10]" : "aspect-[4/3]")}>
         <Image
           src={ev.poster || "/events/events-hero.svg"}
           alt={`${ev.title} — ${categoryLabel(ev.category)} in ${cityName(ev.citySlug)}`}
           fill
           priority={priority}
-          sizes={wide ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" : "290px"}
+          sizes={wide ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" : "280px"}
           className="object-cover transition-transform duration-500 group-hover:scale-[1.05] group-active:scale-[1.03]"
         />
-        <div className="scrim absolute inset-x-0 bottom-0 h-3/4" />
-        <span className="absolute left-2.5 top-2.5 rounded-lg bg-gradient-to-r from-[#ff2bd6] to-[#ff8a00] px-2 py-1 text-[11px] font-bold text-white shadow-lg">
-          {datesLabel(ev)}
+        <span className="absolute left-2.5 top-2.5 rounded-full bg-ink/70 px-2.5 py-1 text-[11px] font-semibold text-gold backdrop-blur">{categoryLabel(ev.category)}</span>
+        <span className="absolute right-2.5 top-2.5 rounded-full bg-gradient-to-r from-[#ff2bd6] to-[#e4113c] px-2.5 py-1 text-[11px] font-bold text-white shadow-lg">
+          {ev.fromPrice ? `from ${rs(ev.fromPrice)}` : "Free"}
         </span>
-        <span className="absolute right-2.5 top-2.5 rounded-lg bg-ink/70 px-2 py-1 text-[11px] font-semibold text-gold backdrop-blur">
-          {categoryLabel(ev.category)}
-        </span>
-        <div className="absolute inset-x-0 bottom-0 p-3.5">
-          <h3 className="line-clamp-2 text-[16px] font-bold leading-tight">{ev.title}</h3>
-          <p className="mt-1 line-clamp-1 flex items-center gap-1 text-[12px] text-white/75">
-            <MapPin className="size-3 shrink-0" />
-            {ev.venueName} · {cityName(ev.citySlug, true)}
-          </p>
-        </div>
       </div>
-      <p className="mt-2 flex items-center gap-2 px-0.5 text-[12px] text-muted">
-        <span className="text-text">{timeLabel(ev)}</span>
-        <span className="ml-auto font-semibold text-gold">{ev.fromPrice ? `from ${rs(ev.fromPrice)}` : "Free entry"}</span>
-      </p>
+      <div className="px-1.5 pb-1 pt-3">
+        <h3 className="line-clamp-1 text-[16px] font-bold leading-tight">{ev.title}</h3>
+        <p className="mt-1.5 flex items-center gap-1.5 text-[12.5px] text-muted">
+          <CalendarDays className="size-3.5 shrink-0 text-[#ff6ad5]" />
+          <span className="truncate">{datesLabel(ev)} · {timeLabel(ev)}</span>
+        </p>
+        <p className="mt-1 flex items-center gap-1.5 text-[12.5px] text-muted">
+          <MapPin className="size-3.5 shrink-0 text-gold" />
+          <span className="truncate">{ev.venueName} · {cityName(ev.citySlug, true)}</span>
+        </p>
+      </div>
     </Link>
   );
 }

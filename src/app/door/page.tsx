@@ -3,6 +3,7 @@ import { ToastHost } from "@/components/ui/Toast";
 import { getDoorActor } from "@/lib/door-auth";
 import { DoorScanner } from "@/components/admin/DoorScanner";
 import { StaffLogin, StaffLogout } from "@/components/StaffLogin";
+import { Logo } from "@/components/brand/Logo";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Door check-in", robots: { index: false } };
@@ -14,7 +15,7 @@ export default async function DoorPage({ searchParams }: { searchParams: Promise
     <ToastHost>
       <main className="mx-auto min-h-screen max-w-[560px] px-4 pb-16 pt-[calc(env(safe-area-inset-top,0px)+16px)]">
         <header className="flex items-center justify-between">
-          <span className="font-display text-[20px] font-extrabold">Sync<span className="text-red">Out</span> <span className="text-[13px] font-semibold text-muted">· Door</span></span>
+          <span className="flex items-center gap-2"><Logo size="sm" /> <span className="text-[13px] font-semibold text-muted">Door</span></span>
           {actor?.kind === "staff" && <StaffLogout />}
         </header>
         {actor ? (

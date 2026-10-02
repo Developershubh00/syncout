@@ -7,6 +7,7 @@ import { AdminLive } from "@/components/admin/AdminLive";
 import { AdminAlertsToggle } from "@/components/admin/AdminAlertsToggle";
 import { PwaProvider } from "@/components/pwa/PwaProvider";
 import { InstallButton } from "@/components/pwa/InstallButton";
+import { Logo } from "@/components/brand/Logo";
 
 // Its own installable app: "SyncOut Admin" opens straight to the dashboard.
 export const metadata = {
@@ -56,8 +57,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         {/* Desktop sidebar */}
         <aside className="hidden w-[212px] shrink-0 border-r border-line print:!hidden lg:flex lg:flex-col">
           <div className="px-5 py-5">
-            <Link href="/admin" className="font-display text-[18px] font-extrabold tracking-tight">
-              Sync<span className="text-red">Out</span>
+            <Link href="/admin" aria-label="SyncOut admin">
+              <Logo size="sm" />
             </Link>
             <p className="mt-0.5 text-[11px] font-semibold tracking-wide text-faint">ADMIN</p>
           </div>
@@ -78,8 +79,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           {/* Phone header — unchanged behaviour, just hidden on desktop */}
           <header className="sticky top-0 z-30 border-b border-line bg-ink/90 backdrop-blur-xl print:hidden lg:hidden">
             <div className="flex items-center gap-3 px-4 py-3">
-              <Link href="/admin" className="font-display text-[18px] font-extrabold tracking-tight">
-                Sync<span className="text-red">Out</span>
+              <Link href="/admin" className="flex items-center" aria-label="SyncOut admin">
+                <Logo size="xs" />
                 <span className="ml-2 rounded-md bg-raised px-1.5 py-0.5 text-[10.5px] font-semibold text-muted">
                   ADMIN
                 </span>

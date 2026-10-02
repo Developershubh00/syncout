@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { markSvg } from "@/components/brand/mark";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -20,7 +21,7 @@ export default function Image() {
         }}
       >
         <div style={{ display: "flex", fontSize: 96, fontWeight: 800, letterSpacing: -3 }}>
-          Sync<span style={{ color: "#e4113c" }}>Out</span>
+          <img src={`data:image/svg+xml;utf8,${encodeURIComponent(markSvg({ size: 64 }))}`} width={64} height={32} style={{ marginRight: 12 }} />sync<span style={{ color: "#e4113c" }}>out</span>
         </div>
         <div style={{ display: "flex", marginTop: 18, fontSize: 40, maxWidth: 950, lineHeight: 1.2 }}>
           {"Guestlists at Delhi NCR's best clubs — and Dandiya nights for Navratri 2026."}

@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { markSvg } from "@/components/brand/mark";
 import { cachedEvent } from "@/lib/cache";
 import { datesLabel, timeLabel, rs } from "@/lib/event-format";
 import { cityName } from "@/lib/cities";
@@ -30,7 +31,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         }}
       >
         <div style={{ display: "flex", alignItems: "center", fontSize: 34, fontWeight: 800 }}>
-          Sync<span style={{ color: "#f2c14e" }}>Out</span>
+          <img src={`data:image/svg+xml;utf8,${encodeURIComponent(markSvg({ size: 64 }))}`} width={64} height={32} style={{ marginRight: 12 }} />sync<span style={{ color: "#f2c14e" }}>out</span>
           <span style={{ marginLeft: 20, fontSize: 22, padding: "6px 16px", borderRadius: 999, background: "rgba(0,0,0,.28)" }}>Dandiya · Navratri 2026</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>

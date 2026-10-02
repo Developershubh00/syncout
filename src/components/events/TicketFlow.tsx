@@ -183,8 +183,8 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
 
   if (event.bookingMode === "external" && event.externalUrl) {
     return (
-      <div className="sticky bottom-[78px] z-20 mt-7 px-4 lg:static lg:px-0">
-        <a href={event.externalUrl} target="_blank" rel="noreferrer" className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#ff2bd6] via-[#e4113c] to-[#ff8a00] text-[15px] font-semibold text-white">
+      <div className="sticky bottom-[calc(env(safe-area-inset-bottom,0px)+96px)] z-20 mt-7 flex justify-center px-5 lg:static lg:px-0">
+        <a href={event.externalUrl} target="_blank" rel="noreferrer" className="flex h-14 w-full max-w-[440px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ff2bd6] via-[#e4113c] to-[#ff8a00] text-[15px] font-semibold text-white shadow-[0_14px_36px_-12px_rgba(228,17,60,.8)]">
           Get tickets <ExternalLink className="size-4" />
         </a>
       </div>
@@ -204,14 +204,14 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
 
   return (
     <>
-      <div className="sticky bottom-[78px] z-20 mt-7 px-4 lg:static lg:px-0">
+      <div className="sticky bottom-[calc(env(safe-area-inset-bottom,0px)+96px)] z-20 mt-7 flex justify-center px-5 lg:static lg:px-0">
         <button
           onClick={() => {
             setOpen(true);
             setStep(0);
             track("begin_checkout", { label: event.title });
           }}
-          className="party-cta flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold text-white"
+          className="party-cta flex h-14 w-full max-w-[440px] items-center justify-center gap-2 rounded-full text-[15px] font-semibold text-white shadow-[0_14px_36px_-12px_rgba(228,17,60,.8)]"
         >
           <Ticket className="size-4" /> Book tickets {from ? `· from ${rs(from)}` : "· free"}
           <ArrowRight className="size-4" />

@@ -145,7 +145,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           <span className="absolute right-3 top-3 rounded-lg bg-gradient-to-r from-[#ff2bd6] to-[#ff8a00] px-2.5 py-1 text-[12px] font-bold text-white">
             {categoryLabel(ev.category)}
           </span>
-          <div className="absolute inset-x-0 bottom-0 p-4 lg:p-6">
+          <div className="absolute inset-x-0 bottom-0 p-4 pb-11 lg:p-6">
             <h1 className="font-display text-[27px] font-extrabold leading-[1.08] tracking-tight lg:text-[36px]">{ev.title}</h1>
             <a href={mapHref} target="_blank" rel="noreferrer" className="mt-1.5 flex items-center gap-1.5 text-[13px] text-white/80">
               <MapPin className="size-3.5" />
@@ -157,8 +157,9 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           }
         />
 
-        <div className="lg:pt-2">
-          <div className="flex flex-wrap gap-2 px-4 pt-4 lg:px-0 lg:pt-0">
+        <div className="relative z-10 -mt-7 rounded-t-[28px] bg-ink pt-2.5 shadow-[0_-18px_40px_-20px_rgba(0,0,0,.9)] lg:mt-0 lg:rounded-none lg:bg-transparent lg:pt-2 lg:shadow-none">
+          <div className="mx-auto h-1 w-10 rounded-full bg-line lg:hidden" />
+          <div className="flex flex-wrap gap-2 px-4 pt-3 lg:px-0 lg:pt-0">
             <Chip icon={<CalendarDays className="size-3.5" />}>{datesLabel(ev)}</Chip>
             <Chip icon={<Clock className="size-3.5" />}>{timeLabel(ev)}</Chip>
             {from !== null && <Chip gold>{from ? `from ${rs(from)}` : "Free"}</Chip>}

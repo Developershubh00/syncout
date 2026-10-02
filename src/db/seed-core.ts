@@ -8,12 +8,13 @@ import { announcements, cities, clubs, events, jobOpenings, settings, ticketTier
 import { DEFAULT_OPENINGS } from "../data/careers";
 import { CITIES, CLUBS, EVENT_TEMPLATES } from "../data/venues";
 import { NCR_CLUBS } from "../data/venues-ncr";
+import { GALLERIA_CLUBS } from "../data/venues-galleria";
 import { DANDIYA_2026, DANDIYA_ANNOUNCEMENT } from "../data/events-2026";
 import { slugify } from "../lib/utils";
 import { istAt } from "../lib/guestlist";
 import { DEFAULT_SETTINGS } from "../lib/settings.defaults";
 
-const ALL_CLUBS = [...CLUBS, ...NCR_CLUBS];
+const ALL_CLUBS = [...GALLERIA_CLUBS, ...CLUBS, ...NCR_CLUBS];
 
 function nightAt(daysAhead: number, hour = 21) {
   const d = new Date();
@@ -47,6 +48,7 @@ export async function seedCitiesAndClubs() {
         rating: c.rating,
         reviewCount: c.reviewCount,
         isFeatured: c.isFeatured ?? false,
+        inHouse: c.inHouse ?? false,
         sortOrder: i,
       }))
     )

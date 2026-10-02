@@ -7,6 +7,7 @@ import { Sheet } from "@/components/ui/Sheet";
 import { NotificationBell } from "@/components/notify/NotificationBell";
 import { CITIES, cityBySlug, DEFAULT_CITY } from "@/lib/cities";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/brand/Logo";
 
 export function TopBar({ city = DEFAULT_CITY, showCity = true }: { city?: string; showCity?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -19,8 +20,8 @@ export function TopBar({ city = DEFAULT_CITY, showCity = true }: { city?: string
     <>
       <header className="sticky top-0 z-30 border-b border-line-soft bg-ink/85 backdrop-blur-xl lg:static lg:border-0 lg:bg-transparent lg:backdrop-blur-none">
         <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-3 lg:max-w-none lg:px-0 lg:pb-0 lg:pt-0">
-          <Link href="/" className="font-display text-[21px] font-extrabold tracking-tight lg:hidden">
-            Sync<span className="text-red">Out</span>
+          <Link href="/" aria-label="SyncOut home" className="lg:hidden">
+            <Logo size="sm" />
           </Link>
 
           {showCity && (

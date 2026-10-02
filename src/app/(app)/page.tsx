@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { TopBar } from "@/components/TopBar";
+import { AppHeader } from "@/components/AppHeader";
+import { getUser } from "@/lib/session";
 import { CityRemember } from "@/components/CityRemember";
 import { preferredCity } from "@/lib/city-pref";
 import { CutoffBanner } from "@/components/CutoffBanner";
@@ -17,9 +19,12 @@ import { Marquee } from "@/components/motion/Marquee";
 import { JsonLd } from "@/components/JsonLd";
 import { SITE, absUrl } from "@/lib/site";
 import { DEFAULT_CITY, isLiveCity } from "@/lib/cities";
+import { Logo } from "@/components/brand/Logo";
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ city?: string }> }) {
   const { city: raw } = await searchParams;
+  const user = await getUser();
+  const initials = user?.name?.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") ?? "";
   const { city, explicit } = await preferredCity(raw);
 
   return (
@@ -49,7 +54,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
         ]}
       />
       {explicit && <CityRemember city={city} />}
-      <TopBar city={city} />
+      <AppHeader city={city} name={user?.name} initials={initials} />
+      <div className="hidden lg:block">
+        <TopBar city={city} />
+      </div>
       <CutoffBanner />
       <Suspense fallback={<HomeSkeleton />}>
         <HomeBody city={city} />
@@ -60,12 +68,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
 }
 
 async function HomeBody({ city }: { city: string }) {
-  const [nights, clubs, offers, events, settings] = await Promise.all([
+  const [nights, clubs, offers, events, settings, noidaClubs] = await Promise.all([
     cachedNights({ citySlug: city, limit: 12 }),
     cachedClubs(city, 14),
     cachedOffers(),
     cachedEvents({ limit: 24 }),
     getSettings(),
+    cachedClubs("noida", 60),
   ]);
 
   const featured = clubs.filter((c) => c.isFeatured);
@@ -193,6 +202,20 @@ async function HomeBody({ city }: { city: string }) {
         }
       />
       <Marquee items={clubs.map((c) => c.name)} label="Clubs you can get on the list for" />
+      {noidaClubs.some((c) => c.inHouse) && (
+        <Reveal>
+          <section className="pt-7">
+            <SectionHead title="SyncOut House" sub="Our own clubs at Gardens Galleria — premium crowd, food & drinks" href="/clubs/in/noida" />
+            <div className="rail">
+              {noidaClubs.filter((c) => c.inHouse).map((c, i) => (
+                <MotionCard key={c.id} index={i} columns={4}>
+                  <ClubCard club={c} width="w-[176px]" />
+                </MotionCard>
+              ))}
+            </div>
+          </section>
+        </Reveal>
+      )}
       {settings.homeSections
         .filter((s) => s.visible)
         .map((s, i) => {
@@ -270,9 +293,7 @@ function HomeSkeleton() {
 function Footer() {
   return (
     <footer className="mt-14 border-t border-line px-4 py-8 text-[12.5px] text-faint lg:hidden">
-      <p className="font-display text-[17px] font-extrabold text-text">
-        Sync<span className="text-red">Out</span>
-      </p>
+      <Logo size="xs" hello={false} />
       <p className="mt-2 max-w-[42ch] leading-relaxed">
         Guestlists and Dandiya events for Delhi NCR. 21+ with a government photo ID for clubs. Entry stays at the venue&apos;s
         discretion and guestlists close at 6 PM on the day.

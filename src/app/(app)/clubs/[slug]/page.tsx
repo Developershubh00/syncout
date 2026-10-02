@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, MapPin, Clock, Star, Shirt, Phone, IndianRupee } from "lucide-react";
+import { Crown, ChevronLeft, MapPin, Clock, Star, Shirt, Phone, IndianRupee } from "lucide-react";
 import { getNights, getClubReviews } from "@/lib/queries";
 import { cachedClub } from "@/lib/cache";
 import { ElegantBackground } from "@/components/fx/Backgrounds";
@@ -88,6 +88,19 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
         </div>
       </div>
 
+      {club.inHouse && (
+        <div className="mx-4 mt-4 rounded-[20px] border border-gold/40 bg-gradient-to-br from-gold/[0.12] to-transparent p-4 lg:mx-0">
+          <p className="flex items-center gap-2 text-[13px] font-extrabold uppercase tracking-wider text-gold">
+            <Crown className="size-4" /> SyncOut House
+          </p>
+          <p className="mt-1 text-[13.5px] leading-relaxed text-white/85">One of our own clubs — our team runs the door, so the list you&apos;re on is the list they check.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {["Premium crowd", "Food & drinks", "Our team on the door"].map((t) => (
+              <span key={t} className="rounded-full border border-gold/30 bg-ink/40 px-3 py-1 text-[12px] font-semibold text-gold">{t}</span>
+            ))}
+          </div>
+        </div>
+      )}
       {club.tagline && (
         <p className="px-4 pt-4 font-display text-[17px] leading-snug text-text">{club.tagline}</p>
       )}

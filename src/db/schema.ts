@@ -88,6 +88,8 @@ export const clubs = pgTable(
     isFeatured: boolean("is_featured").default(false).notNull(),
     isActive: boolean("is_active").default(true).notNull(),
     sortOrder: integer("sort_order").default(0).notNull(),
+    /** SyncOut House — our own clubs: premium crowd, food and drinks, our team on the door. */
+    inHouse: boolean("in_house").default(false).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({ cityIdx: index("clubs_city_idx").on(t.citySlug) })

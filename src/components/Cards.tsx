@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Star, MapPin } from "lucide-react";
+import { Crown, Star, MapPin } from "lucide-react";
 import { friendlyDate, fmtTime, rupees, cn } from "@/lib/utils";
 
 const FALLBACK =
@@ -14,7 +14,7 @@ export function ClubCard({
   club,
   width = "w-[164px]",
 }: {
-  club: { slug: string; name: string; area: string; coverImage: string | null; rating: number | null; priceForTwo: number | null; musicTypes: string[] };
+  club: { slug: string; name: string; area: string; coverImage: string | null; rating: number | null; priceForTwo: number | null; musicTypes: string[]; inHouse?: boolean };
   width?: string;
 }) {
   return (
@@ -34,6 +34,11 @@ export function ClubCard({
             {club.rating.toFixed(1)}
           </span>
         ) : null}
+        {club.inHouse && (
+          <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#140c03] shadow-lg">
+            <Crown className="size-3" /> House
+          </span>
+        )}
         <div className="absolute inset-x-0 bottom-0 p-3">
           <h3 className="line-clamp-2 text-[14px] font-bold leading-tight">{club.name}</h3>
           <p className="mt-0.5 line-clamp-1 text-[11.5px] text-muted">{club.area}</p>

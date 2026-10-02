@@ -19,8 +19,8 @@ export function TabBar() {
   if (path.startsWith("/admin")) return null;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-ink/90 backdrop-blur-lg lg:hidden">
-      <ul className="mx-auto flex max-w-lg items-stretch pb-safe pt-1.5">
+    <nav className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom,0px)+10px)] z-40 rounded-[24px] border border-white/10 bg-[#121216]/90 shadow-[0_14px_40px_-12px_rgba(0,0,0,.85)] backdrop-blur-xl lg:hidden">
+      <ul className="mx-auto flex max-w-lg items-stretch px-1 py-1.5">
         {tabs.map(({ href, label, Icon, party }) => {
           const active =
             href === "/"
