@@ -6,9 +6,10 @@ import { registerSchema } from "@/lib/validators";
 import { hashPassword } from "@/lib/auth";
 import { createUserSession, AuthNotConfigured } from "@/lib/session";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
-import { readJson, isUniqueViolation } from "@/lib/api";
+import { readJson, isUniqueViolation, guard } from "@/lib/api";
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const rl = rateLimit(`register:${clientIp(req)}`, 10, 30 * 60_000);
   if (!rl.ok) return NextResponse.json({ error: "Too many sign-ups from here. Try again later." }, { status: 429 });
 

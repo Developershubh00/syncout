@@ -3,7 +3,7 @@ import { z } from "zod";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { getDoorActor } from "@/lib/door-auth";
-import { readJson, rowsOf } from "@/lib/api";
+import { readJson, rowsOf, guard } from "@/lib/api";
 
 const schema = z.object({ code: z.string().min(4).max(10), g: z.number().int().min(1).max(50).optional().nullable() });
 
@@ -13,6 +13,7 @@ const schema = z.object({ code: z.string().min(4).max(10), g: z.number().int().m
  * scanning the same QR can't both let it through.
  */
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const actor = await getDoorActor();
   if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const parsed = schema.safeParse(await readJson(req));

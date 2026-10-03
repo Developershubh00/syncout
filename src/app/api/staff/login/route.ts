@@ -6,9 +6,10 @@ import { staffLoginSchema } from "@/lib/validators";
 import { verifyPassword } from "@/lib/auth";
 import { createStaffSession } from "@/lib/session";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
-import { readJson } from "@/lib/api";
+import { readJson, guard } from "@/lib/api";
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const rl = rateLimit(`staff:${clientIp(req)}`, 10, 15 * 60_000);
   if (!rl.ok) return NextResponse.json({ error: "Too many tries — wait 15 minutes." }, { status: 429 });
   const parsed = staffLoginSchema.safeParse(await readJson(req));

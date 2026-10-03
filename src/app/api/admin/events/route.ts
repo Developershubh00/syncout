@@ -6,7 +6,7 @@ import { desc } from "drizzle-orm";
 import { getAdmin } from "@/lib/session";
 import { eventSchema } from "@/lib/validators";
 import { bust, TAGS } from "@/lib/tags";
-import { readJson, fail, isUniqueViolation } from "@/lib/api";
+import { readJson, fail, isUniqueViolation, guard } from "@/lib/api";
 
 export async function GET() {
   if (!(await getAdmin())) return fail("Unauthorized", 401);
@@ -14,6 +14,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   if (!(await getAdmin())) return fail("Unauthorized", 401);
   const parsed = eventSchema.safeParse(await readJson(req));
   if (!parsed.success) return fail(parsed.error.issues[0].message, 422);

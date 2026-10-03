@@ -4,11 +4,12 @@ import { db } from "@/db";
 import { notifications } from "@/db/schema";
 import { getUser } from "@/lib/session";
 import { and, eq, inArray, isNull } from "drizzle-orm";
-import { readJson } from "@/lib/api";
+import { readJson, guard } from "@/lib/api";
 
 const schema = z.object({ ids: z.array(z.string().uuid()).max(100).optional(), all: z.boolean().optional() });
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const user = await getUser();
   if (!user) return NextResponse.json({ ok: false }, { status: 401 });
   const parsed = schema.safeParse(await readJson(req));

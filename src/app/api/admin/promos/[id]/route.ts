@@ -4,10 +4,11 @@ import { db } from "@/db";
 import { promoCodes } from "@/db/schema";
 import { getAdmin } from "@/lib/session";
 import { promoBaseSchema } from "@/lib/validators";
-import { readJson, fail, isUniqueViolation } from "@/lib/api";
+import { readJson, fail, isUniqueViolation, guard } from "@/lib/api";
 import { normCode } from "@/lib/promos";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  { const g = await guard(req); if (g) return g; }
   if (!(await getAdmin())) return fail("Unauthorized", 401);
   const parsed = promoBaseSchema.partial().safeParse(await readJson(req));
   if (!parsed.success) return fail(parsed.error.issues[0].message, 422);

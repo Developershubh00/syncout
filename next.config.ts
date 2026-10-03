@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
+const CSP = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob: https://*.public.blob.vercel-storage.com https://images.unsplash.com https://sync.quickrpe.com https://*.cdninstagram.com https://*.fbcdn.net https://www.google-analytics.com https://www.googletagmanager.com https://www.facebook.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.instagram.com https://*.instagram.com https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://www.googleadservices.com https://googleads.g.doubleclick.net; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-src 'self' https://www.instagram.com https://*.instagram.com https://td.doubleclick.net; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://connect.facebook.net https://graph.facebook.com https://vitals.vercel-insights.com https://*.instagram.com; media-src 'self' https://*.cdninstagram.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests";
+
 const config: NextConfig = {
+  poweredByHeader: false,
   images: {
     // AVIF first — usually 20–30% smaller than WebP on phones; optimised images are kept a month.
     formats: ["image/avif", "image/webp"],
@@ -35,6 +38,11 @@ const config: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+          { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
+          { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=(), payment=(), browsing-topics=()" },
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+          { key: "Content-Security-Policy", value: CSP },
         ],
       },
     ];

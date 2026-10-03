@@ -34,5 +34,10 @@ export const MIGRATIONS: { idx: number; tag: string; sql: string }[] = [
     "idx": 6,
     "tag": "0006_v69_club_instagram",
     "sql": "ALTER TABLE \"clubs\" ADD COLUMN \"instagram\" text;--> statement-breakpoint\nALTER TABLE \"clubs\" ADD COLUMN \"instagram_posts\" jsonb DEFAULT '[]'::jsonb NOT NULL;\n--> statement-breakpoint\nUPDATE \"clubs\" SET \"instagram\" = 'levernasia_la' WHERE \"slug\" = 'levernasia-gardens-galleria' AND (\"instagram\" IS NULL OR \"instagram\" = '');\n--> statement-breakpoint\nUPDATE \"clubs\" SET \"instagram\" = 'millionairetheluxclub' WHERE \"slug\" = 'millionaire-the-lux-club-gardens-galleria' AND (\"instagram\" IS NULL OR \"instagram\" = '');\n"
+  },
+  {
+    "idx": 7,
+    "tag": "0007_v70_security",
+    "sql": "CREATE TABLE \"ip_blocks\" (\n\t\"ip\" text PRIMARY KEY NOT NULL,\n\t\"reason\" text,\n\t\"by\" text DEFAULT 'auto' NOT NULL,\n\t\"hits\" integer DEFAULT 0 NOT NULL,\n\t\"expires_at\" timestamp with time zone,\n\t\"created_at\" timestamp with time zone DEFAULT now() NOT NULL\n);\n--> statement-breakpoint\nCREATE TABLE \"security_events\" (\n\t\"id\" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,\n\t\"ip\" text NOT NULL,\n\t\"kind\" text NOT NULL,\n\t\"reason\" text,\n\t\"path\" text,\n\t\"method\" text,\n\t\"user_agent\" text,\n\t\"country\" text,\n\t\"created_at\" timestamp with time zone DEFAULT now() NOT NULL\n);\n--> statement-breakpoint\nCREATE INDEX \"sec_ip_idx\" ON \"security_events\" USING btree (\"ip\");--> statement-breakpoint\nCREATE INDEX \"sec_at_idx\" ON \"security_events\" USING btree (\"created_at\");"
   }
 ];

@@ -4,9 +4,10 @@ import { db } from "@/db";
 import { pushSubscriptions } from "@/db/schema";
 import { getUser } from "@/lib/session";
 import { and, eq } from "drizzle-orm";
-import { readJson } from "@/lib/api";
+import { readJson, guard } from "@/lib/api";
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const user = await getUser();
   if (!user) return NextResponse.json({ ok: false }, { status: 401 });
   const parsed = z.object({ endpoint: z.string().max(1000) }).safeParse(await readJson(req));

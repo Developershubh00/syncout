@@ -5,7 +5,7 @@ import { desc } from "drizzle-orm";
 import { getAdmin } from "@/lib/session";
 import { announcementSchema } from "@/lib/validators";
 import { bust, TAGS } from "@/lib/tags";
-import { readJson, fail } from "@/lib/api";
+import { readJson, fail, guard } from "@/lib/api";
 
 const dt = (v?: string | null) => (v ? new Date(v) : null);
 
@@ -15,6 +15,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   if (!(await getAdmin())) return fail("Unauthorized", 401);
   const parsed = announcementSchema.safeParse(await readJson(req));
   if (!parsed.success) return fail(parsed.error.issues[0].message, 422);

@@ -4,7 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { ticketedEvents, waitlist } from "@/db/schema";
 import { getAdmin } from "@/lib/session";
-import { readJson, fail } from "@/lib/api";
+import { readJson, fail, guard } from "@/lib/api";
 import { notifyUsers, later } from "@/lib/notify";
 import { sendMail, esc } from "@/lib/mail";
 import { absUrl } from "@/lib/site";
@@ -13,6 +13,7 @@ import { dayLabel } from "@/lib/event-format";
 
 /** Tells everyone waiting for an event that spots are open: in-app + push, email, and a WhatsApp list for the rest. */
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   if (!(await getAdmin())) return fail("Unauthorized", 401);
   const parsed = z.object({ eventId: z.string().uuid(), message: z.string().trim().max(300).optional() }).safeParse(await readJson(req));
   if (!parsed.success) return fail("Pick an event", 422);

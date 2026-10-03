@@ -5,7 +5,7 @@ import { getAdmin } from "@/lib/session";
 import { ticketedEventSchema } from "@/lib/validators";
 import { adminEvents } from "@/lib/tevents";
 import { bust, TAGS } from "@/lib/tags";
-import { readJson, fail, isUniqueViolation } from "@/lib/api";
+import { readJson, fail, isUniqueViolation, guard } from "@/lib/api";
 import { eventValues } from "./shared";
 
 export async function GET() {
@@ -14,6 +14,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   if (!(await getAdmin())) return fail("Unauthorized", 401);
   const parsed = ticketedEventSchema.safeParse(await readJson(req));
   if (!parsed.success) return fail(parsed.error.issues[0].message, 422);

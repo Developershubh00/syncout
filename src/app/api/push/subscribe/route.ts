@@ -3,9 +3,10 @@ import { db } from "@/db";
 import { pushSubscriptions } from "@/db/schema";
 import { getUser } from "@/lib/session";
 import { pushSubscribeSchema } from "@/lib/validators";
-import { readJson } from "@/lib/api";
+import { readJson, guard } from "@/lib/api";
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const user = await getUser();
   if (!user) return NextResponse.json({ error: "Log in to turn on notifications" }, { status: 401 });
   const parsed = pushSubscribeSchema.safeParse(await readJson(req));

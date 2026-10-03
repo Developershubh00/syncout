@@ -576,6 +576,34 @@ export const adminDevices = pgTable("admin_devices", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+/** Security log: attacks and scans the firewall caught, newest first in Admin → Security. */
+export const securityEvents = pgTable(
+  "security_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    ip: text("ip").notNull(),
+    kind: text("kind").notNull(), // attack | scan | blocked | bot
+    reason: text("reason"),
+    path: text("path"),
+    method: text("method"),
+    userAgent: text("user_agent"),
+    country: text("country"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({ ipIdx: index("sec_ip_idx").on(t.ip), atIdx: index("sec_at_idx").on(t.createdAt) })
+);
+
+/** Durable, cross-instance IP blocks. An admin can add or lift them; the firewall adds them automatically. */
+export const ipBlocks = pgTable("ip_blocks", {
+  ip: text("ip").primaryKey(),
+  reason: text("reason"),
+  /** auto = the firewall; or an admin name. */
+  by: text("by").default("auto").notNull(),
+  hits: integer("hits").default(0).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export type PromoCode = typeof promoCodes.$inferSelect;
 
 export type JobOpening = typeof jobOpenings.$inferSelect;

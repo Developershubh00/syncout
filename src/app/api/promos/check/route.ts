@@ -5,11 +5,12 @@ import { db } from "@/db";
 import { ticketTiers } from "@/db/schema";
 import { quotePromo } from "@/lib/promos";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
-import { readJson } from "@/lib/api";
+import { readJson, guard } from "@/lib/api";
 
 const schema = z.object({ code: z.string().max(30), eventId: z.string().uuid(), tierId: z.string().uuid(), quantity: z.number().int().min(1).max(50) });
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const rl = rateLimit(`promo:${clientIp(req)}`, 30, 10 * 60_000);
   if (!rl.ok) return NextResponse.json({ error: "Too many tries — wait a few minutes." }, { status: 429 });
   const parsed = schema.safeParse(await readJson(req));

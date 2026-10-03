@@ -4,13 +4,14 @@ import { ticketOrders, ticketedEvents } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getAdmin } from "@/lib/session";
 import { adminOrderPatchSchema } from "@/lib/validators";
-import { readJson, fail } from "@/lib/api";
+import { readJson, fail, guard } from "@/lib/api";
 import { notifyUsers, later } from "@/lib/notify";
 import { sendMail, orderConfirmedEmail, orderRejectedEmail } from "@/lib/mail";
 import { ticketPath } from "@/lib/access";
 import { dayLabel } from "@/lib/event-format";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  { const g = await guard(req); if (g) return g; }
   const admin = await getAdmin();
   if (!admin) return fail("Unauthorized", 401);
   const { id } = await params;

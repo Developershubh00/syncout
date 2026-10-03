@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guard } from "@/lib/api";
 import { uploadImage, MAX_UPLOAD_BYTES, sniffImage } from "@/lib/blob";
 import { getAdmin } from "@/lib/session";
 
@@ -6,6 +7,7 @@ export const runtime = "nodejs";
 
 /** Admin-only image upload. Nothing guest-facing uploads files today. */
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   if (!(await getAdmin())) return NextResponse.json({ error: "Admins only" }, { status: 401 });
 
   const form = await req.formData();

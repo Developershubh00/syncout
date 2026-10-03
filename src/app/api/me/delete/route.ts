@@ -6,9 +6,10 @@ import { users } from "@/db/schema";
 import { getUser, clearUserSession } from "@/lib/session";
 import { verifyPassword } from "@/lib/auth";
 import { deleteAccount } from "@/lib/account-delete";
-import { readJson } from "@/lib/api";
+import { readJson, guard } from "@/lib/api";
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const me = await getUser();
   if (!me) return NextResponse.json({ error: "Log in first" }, { status: 401 });
   const parsed = z.object({ password: z.string().min(1) }).safeParse(await readJson(req));

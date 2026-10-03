@@ -3,9 +3,10 @@ import { adminLoginSchema } from "@/lib/validators";
 import { checkAdminCredentials } from "@/lib/auth";
 import { createAdminSession, AuthNotConfigured } from "@/lib/session";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
-import { readJson } from "@/lib/api";
+import { readJson, guard } from "@/lib/api";
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const rl = rateLimit(`admin-login:${clientIp(req)}`, 8, 10 * 60_000);
   if (!rl.ok) {
     return NextResponse.json(

@@ -15,11 +15,12 @@ import { friendlyDate } from "@/lib/utils";
 import { passPath } from "@/lib/access";
 import { notifyUsers, later } from "@/lib/notify";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
-import { readJson, isUniqueViolation, rowsOf } from "@/lib/api";
+import { readJson, isUniqueViolation, rowsOf, guard } from "@/lib/api";
 
 const makeCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 6);
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const rl = rateLimit(`book:${clientIp(req)}`, 12, 10 * 60_000);
   if (!rl.ok) return NextResponse.json({ error: "Too many requests. Try again in a few minutes." }, { status: 429 });
 

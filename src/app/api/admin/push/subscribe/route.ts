@@ -3,11 +3,12 @@ import { z } from "zod";
 import { db } from "@/db";
 import { adminDevices } from "@/db/schema";
 import { getAdmin } from "@/lib/session";
-import { readJson, fail } from "@/lib/api";
+import { readJson, fail, guard } from "@/lib/api";
 
 const schema = z.object({ endpoint: z.string().url().max(1000), keys: z.object({ p256dh: z.string().max(200), auth: z.string().max(100) }), label: z.string().max(120).optional() });
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   if (!(await getAdmin())) return fail("Unauthorized", 401);
   const parsed = schema.safeParse(await readJson(req));
   if (!parsed.success) return fail("Bad subscription", 422);

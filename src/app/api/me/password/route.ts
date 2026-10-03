@@ -5,10 +5,11 @@ import { users } from "@/db/schema";
 import { getUser } from "@/lib/session";
 import { hashPassword, verifyPassword } from "@/lib/auth";
 import { passwordChangeSchema } from "@/lib/validators";
-import { readJson } from "@/lib/api";
+import { readJson, guard } from "@/lib/api";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const me = await getUser();
   if (!me) return NextResponse.json({ error: "Log in first" }, { status: 401 });
   const rl = rateLimit(`pw:${clientIp(req)}`, 10, 30 * 60_000);

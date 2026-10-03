@@ -35,6 +35,7 @@ const ADMIN_NAV = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/careers", label: "Careers" },
   { href: "/admin/offers", label: "Offers" },
+  { href: "/admin/security", label: "Security" },
   { href: "/admin/settings", label: "Settings" },
 ];
 

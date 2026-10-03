@@ -5,9 +5,10 @@ import { eq } from "drizzle-orm";
 import { getAdmin } from "@/lib/session";
 import { announcementSchema } from "@/lib/validators";
 import { bust, TAGS } from "@/lib/tags";
-import { readJson, fail } from "@/lib/api";
+import { readJson, fail, guard } from "@/lib/api";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  { const g = await guard(req); if (g) return g; }
   if (!(await getAdmin())) return fail("Unauthorized", 401);
   const parsed = announcementSchema.partial().safeParse(await readJson(req));
   if (!parsed.success) return fail(parsed.error.issues[0].message, 422);

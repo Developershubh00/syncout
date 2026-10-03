@@ -5,10 +5,11 @@ import { and, count, eq, inArray, notInArray } from "drizzle-orm";
 import { getAdmin } from "@/lib/session";
 import { ticketedEventSchema } from "@/lib/validators";
 import { bust, TAGS } from "@/lib/tags";
-import { readJson, fail, isUniqueViolation } from "@/lib/api";
+import { readJson, fail, isUniqueViolation, guard } from "@/lib/api";
 import { eventValues } from "../shared";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  { const g = await guard(req); if (g) return g; }
   if (!(await getAdmin())) return fail("Unauthorized", 401);
   const { id } = await params;
   const parsed = ticketedEventSchema.safeParse(await readJson(req));

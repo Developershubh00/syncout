@@ -7,10 +7,11 @@ import { eq } from "drizzle-orm";
 import { getAdmin, getUser } from "@/lib/session";
 import { hasAccess } from "@/lib/access";
 import { orderPaidSchema } from "@/lib/validators";
-import { readJson, fail } from "@/lib/api";
+import { readJson, fail, guard } from "@/lib/api";
 
 /** The guest says they've paid (or messaged us on WhatsApp). Admin still verifies. */
 export async function POST(req: Request, { params }: { params: Promise<{ code: string }> }) {
+  { const g = await guard(req); if (g) return g; }
   const code = (await params).code.toUpperCase();
   const parsed = orderPaidSchema.safeParse(await readJson(req));
   if (!parsed.success) return fail("Bad request", 422);

@@ -7,10 +7,11 @@ import { createResetLink } from "@/lib/password-reset";
 import { sendMail, esc } from "@/lib/mail";
 import { later } from "@/lib/notify";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
-import { readJson } from "@/lib/api";
+import { readJson, guard } from "@/lib/api";
 
 /** Always answers the same way, so it can't be used to find out who has an account. */
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const rl = rateLimit(`forgot:${clientIp(req)}`, 5, 60 * 60_000);
   if (!rl.ok) return NextResponse.json({ error: "Too many requests. Try again in an hour." }, { status: 429 });
   const parsed = z.object({ email: z.string().trim().email() }).safeParse(await readJson(req));

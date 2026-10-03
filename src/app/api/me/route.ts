@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { getUser, createUserSession } from "@/lib/session";
 import { profileSchema } from "@/lib/validators";
-import { readJson } from "@/lib/api";
+import { readJson, guard } from "@/lib/api";
 
 export async function GET() {
   const me = await getUser();
@@ -18,6 +18,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const me = await getUser();
   if (!me) return NextResponse.json({ error: "Log in first" }, { status: 401 });
   const parsed = profileSchema.safeParse(await readJson(req));

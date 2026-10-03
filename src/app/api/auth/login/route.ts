@@ -6,12 +6,13 @@ import { loginSchema } from "@/lib/validators";
 import { verifyPassword } from "@/lib/auth";
 import { createUserSession, AuthNotConfigured } from "@/lib/session";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
-import { readJson } from "@/lib/api";
+import { readJson, guard } from "@/lib/api";
 
 // Compared against when the email doesn't exist, so timing doesn't reveal accounts.
 const DUMMY_HASH = "$2a$10$sw2LBJWzO9ZT0jG0DVqkleheuqQNy.tfP6pbdFf5IaIcggo56qwqO";
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const rl = rateLimit(`login:${clientIp(req)}`, 15, 10 * 60_000);
   if (!rl.ok) return NextResponse.json({ error: "Too many attempts. Try again in a few minutes." }, { status: 429 });
 

@@ -6,7 +6,7 @@ import { getAdmin } from "@/lib/session";
 import { notifySchema } from "@/lib/validators";
 import { notifyUsers, later } from "@/lib/notify";
 import { sendMany, broadcastEmail } from "@/lib/mail";
-import { readJson, fail } from "@/lib/api";
+import { readJson, fail, guard } from "@/lib/api";
 import { z } from "zod";
 
 type Contact = { userId: string | null; name: string; phone: string | null; email: string | null };
@@ -42,6 +42,7 @@ async function recipients(d: { audience: string; targetId?: string | null; statu
  * contact list for WhatsApp/calls) without sending anything.
  */
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   if (!(await getAdmin())) return fail("Unauthorized", 401);
   const dry = new URL(req.url).searchParams.get("dry") === "1";
   // A preview only needs the audience — don't make the admin write a title first.

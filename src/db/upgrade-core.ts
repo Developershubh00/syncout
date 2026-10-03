@@ -12,6 +12,7 @@ export const REQUIRED_TABLES = [
   "ticketed_events", "ticket_tiers", "ticket_orders", "announcements", "notifications", "push_subscriptions", "settings",
   "password_resets", "inquiries", "job_openings", "job_applications",
   "promo_codes", "waitlist", "staff", "admin_devices",
+  "security_events", "ip_blocks",
 ];
 
 export function idempotent(stmt: string): string {

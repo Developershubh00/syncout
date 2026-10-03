@@ -4,10 +4,11 @@ import { bookings, events, clubs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getAdmin } from "@/lib/session";
 import { adminBookingPatchSchema } from "@/lib/validators";
-import { readJson, fail } from "@/lib/api";
+import { readJson, fail, guard } from "@/lib/api";
 import { announceGuestlistDecision } from "@/lib/decisions";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  { const g = await guard(req); if (g) return g; }
   const admin = await getAdmin();
   if (!admin) return fail("Unauthorized", 401);
 

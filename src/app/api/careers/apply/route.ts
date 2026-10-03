@@ -3,12 +3,13 @@ import { db } from "@/db";
 import { jobApplications } from "@/db/schema";
 import { applicationSchema } from "@/lib/validators";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
-import { readJson } from "@/lib/api";
+import { readJson, guard } from "@/lib/api";
 import { getSettings } from "@/lib/settings";
 import { sendMail, esc } from "@/lib/mail";
 import { later } from "@/lib/notify";
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const rl = rateLimit(`apply:${clientIp(req)}`, 6, 60 * 60_000);
   if (!rl.ok) return NextResponse.json({ error: "Too many applications from here — try again later." }, { status: 429 });
   const parsed = applicationSchema.safeParse(await readJson(req));

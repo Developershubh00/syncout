@@ -4,7 +4,7 @@ import { bookings, events, clubs } from "@/db/schema";
 import { getAdmin } from "@/lib/session";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
-import { readJson, fail } from "@/lib/api";
+import { readJson, fail, guard } from "@/lib/api";
 import { announceGuestlistDecision } from "@/lib/decisions";
 
 const schema = z.object({
@@ -14,6 +14,7 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const admin = await getAdmin();
   if (!admin) return fail("Unauthorized", 401);
 

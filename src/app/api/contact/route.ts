@@ -3,13 +3,14 @@ import { db } from "@/db";
 import { inquiries } from "@/db/schema";
 import { inquirySchema } from "@/lib/validators";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
-import { readJson } from "@/lib/api";
+import { readJson, guard } from "@/lib/api";
 import { getSettings } from "@/lib/settings";
 import { sendMail, esc } from "@/lib/mail";
 import { later } from "@/lib/notify";
 import { alertAdmins } from "@/lib/admin-alerts";
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const rl = rateLimit(`contact:${clientIp(req)}`, 5, 30 * 60_000);
   if (!rl.ok) return NextResponse.json({ error: "Too many messages — try WhatsApp instead." }, { status: 429 });
   const parsed = inquirySchema.safeParse(await readJson(req));

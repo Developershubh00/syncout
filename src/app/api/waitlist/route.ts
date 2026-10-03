@@ -5,9 +5,10 @@ import { ticketTiers, ticketedEvents, waitlist } from "@/db/schema";
 import { waitlistSchema } from "@/lib/validators";
 import { getUser } from "@/lib/session";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
-import { readJson } from "@/lib/api";
+import { readJson, guard } from "@/lib/api";
 
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   const rl = rateLimit(`wait:${clientIp(req)}`, 8, 30 * 60_000);
   if (!rl.ok) return NextResponse.json({ error: "Too many requests — try again later." }, { status: 429 });
   const parsed = waitlistSchema.safeParse(await readJson(req));

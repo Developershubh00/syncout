@@ -4,7 +4,7 @@ import { getAdmin } from "@/lib/session";
 import { upgradeDatabase, missingTables } from "@/db/upgrade-core";
 import { seedNavratri, seedNights } from "@/db/seed-core";
 import { bust, TAGS } from "@/lib/tags";
-import { readJson, fail } from "@/lib/api";
+import { readJson, fail, guard } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -13,6 +13,7 @@ const schema = z.object({ action: z.enum(["upgrade", "events", "nights"]) });
 
 /** One-click versions of db:upgrade / db:seed. All add-only and safe to repeat. */
 export async function POST(req: Request) {
+  { const g = await guard(req); if (g) return g; }
   if (!(await getAdmin())) return fail("Unauthorized", 401);
   const parsed = schema.safeParse(await readJson(req));
   if (!parsed.success) return fail("Unknown action", 422);

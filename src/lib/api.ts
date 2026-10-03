@@ -1,7 +1,33 @@
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
 import type { ZodError } from "zod";
 import { getAdmin } from "./session";
+import { sameOrigin } from "./security/csrf";
+import { isBlocked } from "./security/blocklist";
 
+/** Caller's IP from the proxy headers (same logic as the firewall). */
+export async function requestIp(): Promise<string> {
+  const h = await headers();
+  return (h.get("x-forwarded-for") || "").split(",")[0].trim() || h.get("x-real-ip") || "0.0.0.0";
+}
+
+/**
+ * The one guard every mutating API route runs first. Returns a Response to
+ * send (blocked / cross-site), or null to proceed. The edge firewall already
+ * screened the request for injection; this adds the two checks that need Node:
+ * the durable DB block list and a cross-site (CSRF) check.
+ */
+export async function guard(req: Request): Promise<NextResponse | null> {
+  if (!sameOrigin(req)) return NextResponse.json({ error: "Bad origin" }, { status: 403 });
+  try {
+    if (await isBlocked(await requestIp())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  } catch {
+    /* DB blip — don't lock out real users; the edge firewall still stands */
+  }
+  return null;
+}
+
+/** Reads the JSON body AND runs {@link guard} first. Mutating routes use this and bail if it returns null-with-status. */
 export async function readJson(req: Request): Promise<unknown> {
   try {
     return await req.json();
