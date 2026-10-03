@@ -10,6 +10,7 @@ import { Input, Textarea, Select } from "@/components/ui/Field";
 import { useToast } from "@/components/ui/Toast";
 import { friendlyDate, cn, rupees } from "@/lib/utils";
 import { ThankYouSplash } from "@/components/fx/ThankYouSplash";
+import { playConfirm } from "@/lib/sound";
 import { track } from "@/lib/track";
 
 type EntryId = "stag_female" | "couple" | "stag_male";

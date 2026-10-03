@@ -237,6 +237,7 @@ export type BookingMode = "request" | "upi" | "whatsapp" | "external" | "free";
 export type OrderStatus =
   | "awaiting_payment"
   | "payment_submitted"
+  | "verifying"
   | "confirmed"
   | "rejected"
   | "cancelled"
@@ -276,6 +277,10 @@ export const ticketedEvents = pgTable(
     /** Where the listing came from — admin reference only, never shown. */
     sourceUrl: text("source_url"),
     salesOpen: boolean("sales_open").default(true).notNull(),
+  /** Guestlist with screening: the guest uploads a photo and the team approves before entry. */
+  requiresVerification: boolean("requires_verification").default(false).notNull(),
+  /** Shown at checkout to explain why a photo is needed (e.g. "couples-only, cream crowd"). */
+  verificationNote: text("verification_note"),
     isFeatured: boolean("is_featured").default(false).notNull(),
     isActive: boolean("is_active").default(true).notNull(),
     sortOrder: integer("sort_order").default(0).notNull(),
@@ -349,6 +354,8 @@ export const ticketOrders = pgTable(
     promoCode: text("promo_code"),
     /** Guest numbers (1…admits) already let in — each friend can carry their own QR. */
     admitted: jsonb("admitted").$type<number[]>().default([]).notNull(),
+  /** Photos the guest uploaded for verification (URLs). */
+  photos: jsonb("photos").$type<string[]>().default([]).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({

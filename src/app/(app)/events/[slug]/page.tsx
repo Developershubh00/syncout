@@ -217,18 +217,27 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
               open: ev.salesOpen && !over,
               closedReason: over ? "This event is over — see what's coming up next." : "Bookings for this event are closed.",
               upiReady: looksLikeVpa(settings.upiVpa) || Boolean(settings.upiQrImage),
+              requiresVerification: ev.requiresVerification,
+              verificationNote: ev.verificationNote,
             }}
             tiers={flowTiers}
             user={user ? { name: user.name, email: user.email } : null}
           />
 
           <ul className="mx-4 mt-4 grid grid-cols-2 gap-2 text-[12px] lg:mx-0">
-            {[
+            {(ev.requiresVerification
+              ? [
+                  { Icon: BadgeCheck, t: "Free — guestlist only" },
+                  { Icon: QrCode, t: "QR entry, works offline" },
+                  { Icon: BadgePercent, t: "Confirmed within the hour" },
+                  { Icon: MessageCircle, t: "Hand-picked crowd" },
+                ]
+              : [
               { Icon: BadgeCheck, t: "Pay by UPI, any app" },
               { Icon: MessageCircle, t: "Confirmed on WhatsApp" },
               { Icon: QrCode, t: "QR ticket, works offline" },
               settings.noBookingFee ? { Icon: BadgePercent, t: "No booking fee" } : { Icon: MessageCircle, t: "Real people on WhatsApp" },
-            ].map(({ Icon, t }) => (
+            ]).map(({ Icon, t }) => (
               <li key={t} className="flex items-center gap-2 rounded-xl border border-line bg-surface/70 px-3 py-2 text-muted">
                 <Icon className="size-4 shrink-0 text-gold" /> {t}
               </li>

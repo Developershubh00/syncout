@@ -16,6 +16,7 @@ export const categoryLabel = (id?: string | null) => CATEGORIES.find((c) => c.id
 export const ORDER_STATUS: Record<OrderStatus, { label: string; cls: string }> = {
   awaiting_payment: { label: "Awaiting payment", cls: "bg-raised text-muted" },
   payment_submitted: { label: "Verifying payment", cls: "bg-gold/15 text-gold" },
+  verifying: { label: "Pending verification", cls: "bg-gold/15 text-gold" },
   confirmed: { label: "Confirmed", cls: "bg-gold/15 text-gold" },
   checked_in: { label: "Checked in", cls: "bg-gold/15 text-gold" },
   rejected: { label: "Not confirmed", cls: "bg-red/12 text-red-hot" },

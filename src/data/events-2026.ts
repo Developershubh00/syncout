@@ -12,7 +12,7 @@
 export type SeedTicketEvent = {
   slug: string;
   title: string;
-  category: "dandiya" | "garba";
+  category: "dandiya" | "garba" | "party";
   citySlug: "new-delhi" | "gurugram" | "noida";
   venueName: string;
   area?: string;
@@ -27,7 +27,13 @@ export type SeedTicketEvent = {
   ageLimit?: string;
   terms?: string;
   isFeatured?: boolean;
-  sourceUrl: string;
+  requiresVerification?: boolean;
+  verificationNote?: string;
+  bookingMode?: "request" | "upi" | "whatsapp" | "external" | "free";
+  poster?: string;
+  organizer?: string;
+  dressCode?: string;
+  sourceUrl?: string;
   tiers: { name: string; price: number; admits?: number; description?: string }[];
 };
 
@@ -323,4 +329,52 @@ export const DANDIYA_ANNOUNCEMENT = {
   priority: 10,
   /** Ends the Monday after the last listed event. */
   endsAt: "2026-10-26T00:00:00+05:30",
+};
+
+
+/* ════════════════════════════════════════════════════════════════
+   Skyra launch — a one-off featured party (Greater Noida West).
+   Free, couples-only, cream-crowd guestlist with photo verification.
+   ════════════════════════════════════════════════════════════════ */
+export const SKYRA_LAUNCH: SeedTicketEvent = {
+  slug: "skyra-grand-launch-2026",
+  title: "Skyra — The Grand Launch",
+  category: "party",
+  citySlug: "noida",
+  venueName: "Skyra Lounge & Dining",
+  area: "Sector 2, Greater Noida West",
+  address: "Bisrakh Gol Chakkar, Service Road (Near Yatharth Hospital), Sector 2, Greater Noida West, Uttar Pradesh 201306",
+  days: ["2026-10-03"],
+  time: "19:30",
+  timeLabel: "Entry 6–8 PM · party 7:30 PM onwards",
+  hours: 5,
+  description:
+    "Skyra Lounge & Dining opens its doors — an evening of fine dining, live music and a BYOB vibe, hosted with SyncOut. Signature cuisine, curated beverages and an exclusive BYOB experience. Food and drinks are unlimited and on the house for the night. A couples-only launch with a hand-picked crowd — entry is free, but by guestlist only.",
+  highlights: ["Unlimited food & drinks — on the house", "Signature cuisine", "Live music", "Exclusive BYOB experience", "Couples only"],
+  dressCode: "Smart & stylish — dress to impress.",
+  organizer: "Skyra Lounge & Dining × SyncOut",
+  ageLimit: "21+",
+  terms:
+    "Couples only. Entry window 6–8 PM; arrive within it. Free entry by guestlist — a photo is required so the team can confirm a hand-picked crowd. Your spot is confirmed once verified (usually within an hour). The venue makes the final call on entry. Drink responsibly; never drink and drive.",
+  bookingMode: "free",
+  requiresVerification: true,
+  verificationNote:
+    "Skyra's launch is couples-only with a hand-picked crowd. Upload a clear photo of you (and your partner) so our team can confirm your spot — it's free, and you'll hear back within the hour.",
+  isFeatured: true,
+  poster: "/events/skyra-grand-launch-2026.svg",
+  tiers: [{ name: "Couple entry", price: 0, admits: 2, description: "Free · couples only · unlimited food & drinks" }],
+};
+
+export const SKYRA_ANNOUNCEMENT = {
+  slug: "skyra-launch-2026",
+  title: "Tonight: Skyra × SyncOut Grand Launch",
+  body: "Skyra Lounge opens in Greater Noida West — fine dining, live music, BYOB, and unlimited food & drinks on the house. Couples only, free entry, hand-picked crowd. Entry 6–8 PM. Get on the list before it fills.",
+  image: "/events/skyra-grand-launch-2026.svg",
+  ctaLabel: "Get on the list",
+  ctaUrl: "/b/skyra-grand-launch-2026",
+  cities: ["noida", "new-delhi", "gurugram"],
+  theme: "elegant" as const,
+  kind: "popup" as const,
+  priority: 100,
+  endsAt: "2026-10-04T06:00:00+05:30",
 };

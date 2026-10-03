@@ -81,7 +81,10 @@ export async function POST(req: Request) {
   let mode: BookingMode = ev.bookingMode === "whatsapp" ? "request" : ev.bookingMode;
   if (amount === 0) mode = "free";
   else if (mode === "upi" && !looksLikeVpa(settings.upiVpa) && !settings.upiQrImage) mode = "request";
-  const status = mode === "upi" ? "awaiting_payment" : "payment_submitted";
+  const photos = (d.photos ?? []).filter(Boolean).slice(0, 4);
+  if (ev.requiresVerification && photos.length === 0)
+    return NextResponse.json({ error: "A photo is required to join this guestlist." }, { status: 422 });
+  const status = ev.requiresVerification ? "verifying" : mode === "upi" ? "awaiting_payment" : "payment_submitted";
 
   // Tickets per day are checked inside the insert, counting paid tickets and
   // unpaid ones still inside their hold window.
@@ -92,13 +95,13 @@ export async function POST(req: Request) {
       const res = await db.execute(sql`
         insert into ticket_orders (
           code, event_id, tier_id, user_id, day, tier_name, quantity, admits, unit_price, amount,
-          name, phone, email, status, mode, note, subtotal, discount, promo_code
+          name, phone, email, status, mode, note, subtotal, discount, promo_code, photos
         )
         select
           ${code}, ${ev.id}::uuid, ${tier.id}::uuid, ${user?.id ?? null}::uuid, ${day}, ${tier.name},
           ${d.quantity}::int, ${d.quantity * tier.admits}::int, ${tier.price}::int, ${amount}::int,
           ${d.name.trim()}, ${d.phone}, ${d.email.toLowerCase()}, ${status}, ${mode}, ${d.note || null},
-          ${subtotal}::int, ${discount}::int, ${promo?.code ?? null}
+          ${subtotal}::int, ${discount}::int, ${promo?.code ?? null}, ${JSON.stringify(photos)}::jsonb
         where ${tier.capacity}::int is null or (
           select coalesce(sum(quantity), 0) from ticket_orders
           where tier_id = ${tier.id}::uuid and coalesce(day, '') = ${day}
@@ -135,8 +138,10 @@ export async function POST(req: Request) {
 
   later(() =>
     alertAdmins({
-      title: amount > 0 ? `New booking · ${rs(amount)}` : "New free booking",
-      body: `${ev.title} · ${tickets} · ${dayLabel(day)} — ${d.name} (${d.phone})`,
+      title: ev.requiresVerification ? `Verify guest · ${ev.title}` : amount > 0 ? `New booking · ${rs(amount)}` : "New free booking",
+      body: ev.requiresVerification
+        ? `${d.name} (${d.phone}) uploaded a photo — approve or decline`
+        : `${ev.title} · ${tickets} · ${dayLabel(day)} — ${d.name} (${d.phone})`,
       url: `/admin/tickets/${saved.code}`,
       tag: saved.code,
     })
@@ -145,8 +150,8 @@ export async function POST(req: Request) {
   if (acct.userId) {
     await notifyUsers([acct.userId], {
       kind: "receipt",
-      title: mode === "upi" ? "Booking saved — complete payment" : "Booking received — your QR is ready",
-      body: `${ev.title} · ${dayLabel(day)} · ${tickets}`,
+      title: ev.requiresVerification ? "Request received — verifying now" : mode === "upi" ? "Booking saved — complete payment" : "Booking received — your QR is ready",
+      body: ev.requiresVerification ? `${ev.title} — we'll confirm within the hour` : `${ev.title} · ${dayLabel(day)} · ${tickets}`,
       url,
       popup: false,
     }).catch(() => {});
@@ -171,5 +176,5 @@ export async function POST(req: Request) {
   );
 
   const qr = await qrSvg(absUrl(`/door?code=${saved.code}`));
-  return NextResponse.json({ ok: true, code: saved.code, url, mode, account: acct.account, qr }, { status: 201 });
+  return NextResponse.json({ ok: true, code: saved.code, url, mode, account: acct.account, qr, verifying: ev.requiresVerification }, { status: 201 });
 }

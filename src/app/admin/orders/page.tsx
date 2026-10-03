@@ -74,6 +74,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
                 eventTitle: o.eventTitle, day: o.day, tierName: o.tierName, quantity: o.quantity, admits: o.admits,
                 amount: o.amount, utr: o.utr, note: o.note, adminNote: o.adminNote,
                 whatsappAt: o.whatsappAt ? String(o.whatsappAt) : null, createdAt: String(o.createdAt), hasAccount: Boolean(o.userId),
+                photos: (o.photos ?? []) as string[],
               }}
             />
           ))}

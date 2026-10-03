@@ -161,6 +161,7 @@ export const orderSchema = z.object({
   email: z.string().trim().email("That email doesn't look right").max(120),
   note: z.string().max(300).optional().or(z.literal("")),
   promoCode: z.string().trim().max(30).optional().or(z.literal("")),
+  photos: z.array(z.string().url().max(600)).max(4).optional(),
 });
 
 export const orderPaidSchema = z.object({
@@ -171,7 +172,7 @@ export const orderPaidSchema = z.object({
 });
 
 export const adminOrderPatchSchema = z.object({
-  status: z.enum(["awaiting_payment", "payment_submitted", "confirmed", "rejected", "cancelled", "refunded", "checked_in"]).optional(),
+  status: z.enum(["awaiting_payment", "payment_submitted", "verifying", "confirmed", "rejected", "cancelled", "refunded", "checked_in"]).optional(),
   adminNote: z.string().max(300).optional().nullable(),
   reason: z.string().max(200).optional().nullable(),
 });

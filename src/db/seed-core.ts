@@ -9,7 +9,7 @@ import { DEFAULT_OPENINGS } from "../data/careers";
 import { CITIES, CLUBS, EVENT_TEMPLATES } from "../data/venues";
 import { NCR_CLUBS } from "../data/venues-ncr";
 import { GALLERIA_CLUBS } from "../data/venues-galleria";
-import { DANDIYA_2026, DANDIYA_ANNOUNCEMENT } from "../data/events-2026";
+import { DANDIYA_2026, DANDIYA_ANNOUNCEMENT, SKYRA_LAUNCH, SKYRA_ANNOUNCEMENT } from "../data/events-2026";
 import { slugify } from "../lib/utils";
 import { istAt } from "../lib/guestlist";
 import { DEFAULT_SETTINGS } from "../lib/settings.defaults";
@@ -102,7 +102,7 @@ export async function seedNights(days = 14) {
 /** The Navratri 2026 events, the Dandiya popup and default settings. */
 export async function seedNavratri() {
   let added = 0;
-  for (const [i, e] of DANDIYA_2026.entries()) {
+  for (const [i, e] of [...DANDIYA_2026, SKYRA_LAUNCH].entries()) {
     const days = [...e.days].sort();
     const [h, m] = e.time.split(":").map(Number);
     const startsAt = istAt(days[0], h, m);
@@ -121,13 +121,17 @@ export async function seedNavratri() {
         endsAt,
         days: days.length > 1 ? days : [],
         timeLabel: e.timeLabel ?? null,
-        poster: `/events/${e.slug}.svg`,
+        poster: e.poster ?? `/events/${e.slug}.svg`,
         description: e.description,
         highlights: e.highlights,
         ageLimit: e.ageLimit ?? null,
         terms: e.terms ?? null,
-        bookingMode: "upi",
-        sourceUrl: e.sourceUrl,
+        organizer: e.organizer ?? null,
+        dressCode: e.dressCode ?? null,
+        bookingMode: e.bookingMode ?? "upi",
+        requiresVerification: e.requiresVerification ?? false,
+        verificationNote: e.verificationNote ?? null,
+        sourceUrl: e.sourceUrl ?? null,
         isFeatured: e.isFeatured ?? false,
         sortOrder: i,
       })
@@ -147,10 +151,12 @@ export async function seedNavratri() {
       }))
     );
   }
-  await db
-    .insert(announcements)
-    .values({ ...DANDIYA_ANNOUNCEMENT, endsAt: new Date(DANDIYA_ANNOUNCEMENT.endsAt) })
-    .onConflictDoNothing({ target: announcements.slug });
+  for (const a of [DANDIYA_ANNOUNCEMENT, SKYRA_ANNOUNCEMENT]) {
+    await db
+      .insert(announcements)
+      .values({ ...a, endsAt: new Date(a.endsAt) })
+      .onConflictDoNothing({ target: announcements.slug });
+  }
   await db
     .insert(settings)
     .values({ key: "site", value: DEFAULT_SETTINGS as unknown as Record<string, unknown> })

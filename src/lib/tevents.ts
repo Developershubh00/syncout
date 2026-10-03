@@ -121,6 +121,7 @@ const orderCols = {
   discount: ticketOrders.discount,
   promoCode: ticketOrders.promoCode,
   admitted: ticketOrders.admitted,
+  photos: ticketOrders.photos,
   eventId: ticketedEvents.id,
   eventSlug: ticketedEvents.slug,
   eventTitle: ticketedEvents.title,

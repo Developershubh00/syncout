@@ -9,6 +9,7 @@ import { LogoutButton } from "@/components/LogoutButton";
 import { ChevronRight, Ticket, Disc3, LifeBuoy, Sparkles, Bell, UserPen, Briefcase, ShieldCheck as Shield } from "lucide-react";
 import { InstallButton } from "@/components/pwa/InstallButton";
 import { PushToggle } from "@/components/pwa/PushToggle";
+import { SoundToggle } from "@/components/SoundToggle";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "You" };
@@ -81,6 +82,7 @@ export default async function ProfilePage() {
         <ul className="mt-3 divide-y divide-line overflow-hidden rounded-[18px] border border-line bg-surface empty:hidden">
           <li className="empty:hidden"><InstallButton /></li>
           {user && <li className="empty:hidden"><PushToggle /></li>}
+          <li><SoundToggle /></li>
         </ul>
       </nav>
 

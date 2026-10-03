@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, BadgeCheck, BellRing, Check, Clock, Download, ExternalLink, Lock, MapPin, Minus, Plus, Share2, Ticket, TicketPercent, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, BellRing, Check, Clock, Download, ExternalLink, Lock, MapPin, Minus, Plus, Share2, Ticket, TicketPercent, X, Camera, ImagePlus, Loader2, ShieldCheck } from "lucide-react";
 import { Portal } from "@/components/ui/Portal";
 import { Input, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Countdown } from "@/components/events/Countdown";
 import { RollingNumber } from "@/components/motion/RollingNumber";
 import { readSavedPromo } from "@/components/PromoCapture";
+import { playConfirm } from "@/lib/sound";
 import { ticketPath } from "@/components/booking/ticket-shape";
 import { dayLabel, rs } from "@/lib/event-format";
 import { track } from "@/lib/track";
@@ -46,11 +47,13 @@ export type FlowEvent = {
   poster?: string | null;
   timeText?: string;
   cityLabel?: string;
+  requiresVerification?: boolean;
+  verificationNote?: string | null;
 };
 
-type Step = "tickets" | "qty" | "details" | "review" | "processing" | "done" | "wait";
-type Done = { code: string; url: string; mode: string; account: string | null; qr: string | null };
-const ORDER: Step[] = ["tickets", "qty", "details", "review", "processing", "done"];
+type Step = "tickets" | "qty" | "details" | "photo" | "review" | "processing" | "done" | "wait";
+type Done = { code: string; url: string; mode: string; account: string | null; qr: string | null; verifying?: boolean };
+const ORDER: Step[] = ["tickets", "qty", "details", "photo", "review", "processing", "done"];
 
 /* ── a paper ticket that sizes its outline to whatever it holds ── */
 function TicketShape({ cut, selected, children, className, layoutId, tone = "#ffffff" }: { cut: number | ((h: number) => number); selected?: boolean; children: React.ReactNode; className?: string; layoutId?: string; tone?: string }) {
@@ -142,6 +145,10 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
   const [checking, setChecking] = useState(false);
   const [wait, setWait] = useState<{ tierId: string; tierName: string } | null>(null);
   const [waitDone, setWaitDone] = useState(false);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [wantUpdates, setWantUpdates] = useState(true);
+  const needsPhoto = Boolean(event.requiresVerification);
 
   useEffect(() => {
     const saved = readSavedPromo();
@@ -207,6 +214,7 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
     if (step === "tickets" || step === "done") return close();
     if (step === "wait") return go("tickets");
     if (step === "processing") return;
+    if (step === "photo") return go("details");
     go(ORDER[ORDER.indexOf(step) - 1]);
   };
 
@@ -272,6 +280,46 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
     }
   }
 
+  // Turn on push updates quietly (best-effort — never blocks the booking).
+  async function enableUpdates() {
+    try {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window) || Notification.permission === "denied") return;
+      const reg = (await navigator.serviceWorker.getRegistration()) ?? (await navigator.serviceWorker.register("/sw.js"));
+      const perm = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+      if (perm !== "granted") return;
+      const { key } = await (await fetch("/api/push/key")).json();
+      if (!key) return;
+      const pad = "=".repeat((4 - (key.length % 4)) % 4);
+      const raw = atob((key + pad).replace(/-/g, "+").replace(/_/g, "/"));
+      const appKey = Uint8Array.from(raw, (c) => c.charCodeAt(0));
+      const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appKey }));
+      const j = sub.toJSON();
+      await fetch("/api/push/subscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: j.endpoint, keys: j.keys }) });
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function uploadPhotos(files: FileList | null) {
+    if (!files?.length) return;
+    setUploading(true);
+    const added: string[] = [];
+    for (const f of [...files].slice(0, 4 - photos.length)) {
+      try {
+        const body = new FormData();
+        body.append("file", f);
+        const res = await fetch("/api/verify-photo", { method: "POST", body });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Upload failed");
+        added.push(data.url);
+      } catch (e) {
+        toast(e instanceof Error ? e.message : "Upload failed", "err");
+      }
+    }
+    if (added.length) setPhotos((p) => [...p, ...added].slice(0, 4));
+    setUploading(false);
+  }
+
   async function submit() {
     if (!tier || !validate()) return;
     setBusy(true);
@@ -291,6 +339,7 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
             email: form.email.trim(),
             note: form.note,
             promoCode: discount ? promo?.code : undefined,
+            photos: photos.length ? photos : undefined,
           }),
         }),
         new Promise((r) => setTimeout(r, 1200)), // let the ring breathe
@@ -298,7 +347,9 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Something went wrong");
       track("order_created", { value: total, label: event.title });
-      setDone({ code: data.code, url: data.url, mode: data.mode, account: data.account ?? null, qr: data.qr ?? null });
+      playConfirm();
+      if (wantUpdates) enableUpdates();
+      setDone({ code: data.code, url: data.url, mode: data.mode, account: data.account ?? null, qr: data.qr ?? null, verifying: Boolean(data.verifying) });
       setDir(1);
       setStep("done");
     } catch (err) {
@@ -409,9 +460,11 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
       : step === "qty"
         ? { label: "Continue", pill: rs(subtotal), can: qty >= 1 && qty <= max, run: () => go("details") }
         : step === "details"
-          ? { label: "Review", pill: rs(subtotal), can: true, run: () => validate() && go("review") }
+          ? { label: needsPhoto ? "Add a photo" : "Review", pill: needsPhoto ? undefined : rs(subtotal), can: true, run: () => validate() && go(needsPhoto ? "photo" : "review") }
+          : step === "photo"
+            ? { label: "Review", can: photos.length > 0, run: () => go("review") }
           : step === "review"
-            ? { label: mode === "upi" ? "Book & pay" : "Book now", pill: rs(total), can: !busy, run: submit }
+            ? { label: needsPhoto ? "Join the list" : mode === "upi" ? "Book & pay" : "Book now", pill: needsPhoto ? undefined : rs(total), can: !busy, run: submit }
             : step === "wait" && !waitDone
               ? { label: `Notify me · ${qty}`, can: !busy, run: joinWaitlist }
               : null;
@@ -619,6 +672,37 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
                           <Input label="Email" type="email" value={form.email} onChange={set("email")} error={errors.email || undefined} autoComplete="email" />
                           <Textarea label="Anything we should know? (optional)" value={form.note} onChange={set("note")} />
                         </div>
+                        <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
+                          <input type="checkbox" checked={wantUpdates} onChange={(e) => setWantUpdates(e.target.checked)} className="mt-0.5 size-4 accent-[#ff2bd6]" />
+                          <span className="min-w-0 text-[13px] leading-snug text-white/75"><b className="text-white">Keep me updated on SyncOut</b> — new launches, drops and offers. Tap to allow notifications after you book.</span>
+                        </label>
+                      </motion.div>
+                    )}
+
+                    {step === "photo" && (
+                      <motion.div key="photo" custom={dir} variants={slide} initial="enter" animate="center" exit="exit" className="px-5 pt-5">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-2.5 py-1 text-[11.5px] font-bold uppercase tracking-wide text-gold"><ShieldCheck className="size-3.5" /> Guestlist verification</span>
+                        <h3 className="mt-3 font-display text-[24px] font-extrabold leading-tight">Add a photo to join the list</h3>
+                        <p className="mt-1.5 text-[13px] leading-relaxed text-white/65">{event.verificationNote || "Upload a clear photo so our team can confirm your spot. It's free — you'll hear back soon."}</p>
+                        <div className="mt-5 grid grid-cols-3 gap-2.5">
+                          {photos.map((url, i) => (
+                            <div key={url + i} className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-white/5">
+                              <Image src={url} alt="" fill sizes="120px" className="object-cover" />
+                              <button onClick={() => setPhotos((p) => p.filter((_, k) => k !== i))} aria-label="Remove" className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-black/70 text-white"><X className="size-3.5" /></button>
+                            </div>
+                          ))}
+                          {photos.length < 4 && (
+                            <label className="grid aspect-[3/4] cursor-pointer place-items-center rounded-2xl border border-dashed border-white/20 text-white/60">
+                              {uploading ? (
+                                <span className="flex flex-col items-center gap-1 text-[11.5px]"><Loader2 className="size-5 animate-spin" /> Uploading…</span>
+                              ) : (
+                                <span className="flex flex-col items-center gap-1 text-[11.5px]"><ImagePlus className="size-6" /> Add photo</span>
+                              )}
+                              <input type="file" accept="image/jpeg,image/png,image/webp" capture="user" multiple hidden onChange={(e) => uploadPhotos(e.target.files)} />
+                            </label>
+                          )}
+                        </div>
+                        <p className="mt-4 flex items-start gap-2 rounded-2xl bg-white/[0.04] p-3 text-[12px] leading-relaxed text-white/55"><Camera className="mt-0.5 size-4 shrink-0 text-gold" /> Your photo is used once, only to confirm your spot. Couples: a photo of both of you is ideal.</p>
                       </motion.div>
                     )}
 
@@ -663,7 +747,9 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
                           {promoErr && <p className="mt-1.5 text-[12px] text-red-hot">{promoErr}</p>}
                         </div>
                         <div className="mx-auto mt-3 max-w-[380px] text-[12.5px] leading-relaxed text-white/60">
-                          {mode === "upi" ? (
+                          {needsPhoto ? (
+                            <p className="flex gap-2"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-gold" /> We&apos;ll review your photo and confirm your spot — usually within the hour. You&apos;ll get a notification and your entry QR the moment you&apos;re approved.</p>
+                          ) : mode === "upi" ? (
                             <p>Next you&apos;ll see a UPI QR for {rs(total)} — pay from any UPI app and add the reference.</p>
                           ) : mode === "free" ? (
                             <p>This one&apos;s free — we&apos;ll confirm your spot shortly.</p>
@@ -736,7 +822,7 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
                                 <p className="font-display text-[24px] font-extrabold leading-none text-[#e4113c]">{rs(total)}</p>
                               </div>
                               <p className="mt-3 rounded-full bg-[#fff6dc] px-3 py-1.5 text-[11.5px] font-bold text-[#8a5a00]">
-                                {done.mode === "upi" ? "Pay by UPI next to confirm" : done.mode === "free" ? "You're on the list" : "Booking received — confirming now"}
+                                {done.verifying ? "Pending verification — we'll confirm soon" : done.mode === "upi" ? "Pay by UPI next to confirm" : done.mode === "free" ? "You're on the list" : "Booking received — confirming now"}
                               </p>
                             </div>
                           </TicketShape>

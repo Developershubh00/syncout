@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" width="900" height="1200">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a1206"/><stop offset="0.5" stop-color="#0d0a07"/><stop offset="1" stop-color="#080604"/></linearGradient>
+<linearGradient id="gold" x1="0" x2="1"><stop offset="0" stop-color="#f7e3a1"/><stop offset="0.5" stop-color="#e8c66a"/><stop offset="1" stop-color="#c9992f"/></linearGradient>
+<radialGradient id="glow" cx="50%" cy="22%" r="55%"><stop offset="0" stop-color="#8a5a1a" stop-opacity="0.55"/><stop offset="1" stop-color="#8a5a1a" stop-opacity="0"/></radialGradient>
+<linearGradient id="mk" x1="0" x2="1"><stop offset="0" stop-color="#f7e3a1"/><stop offset="1" stop-color="#c9992f"/></linearGradient>
+</defs>
+<rect width="900" height="1200" fill="url(#bg)"/>
+<rect width="900" height="620" fill="url(#glow)"/>
+<rect x="34" y="34" width="832" height="1132" rx="8" fill="none" stroke="url(#gold)" stroke-width="2" opacity="0.6"/>
+<rect x="46" y="46" width="808" height="1108" rx="4" fill="none" stroke="url(#gold)" stroke-width="1" opacity="0.35"/>
+<text x="450" y="130" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="600" font-size="30" letter-spacing="6" fill="url(#gold)">FOOD · MUSIC · PEOPLE · FREEDOM</text>
+<text x="450" y="250" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="800" font-size="96" letter-spacing="6" fill="url(#gold)">SKYRA</text>
+<text x="450" y="292" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="500" font-size="26" letter-spacing="10" fill="#d9c089">— BYOB —</text>
+<text x="450" y="420" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="500" font-size="22" letter-spacing="8" fill="#cbb682">YOU'RE CORDIALLY INVITED TO</text>
+<text x="450" y="500" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="800" font-size="74" letter-spacing="1" fill="url(#gold)">THE GRAND LAUNCH</text>
+<text x="450" y="548" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="500" font-size="24" letter-spacing="3" fill="#cbb682">AN EVENING OF FINE DINING · MUSIC · BYOB</text>
+<line x1="150" y1="610" x2="750" y2="610" stroke="url(#gold)" stroke-width="1" opacity="0.4"/>
+<text x="300" y="648" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="600" font-size="26" letter-spacing="4" fill="#e4d4a0">SATURDAY</text>
+<text x="450" y="690" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="800" font-size="80" letter-spacing="0" fill="url(#gold)">03</text>
+<text x="450" y="722" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="500" font-size="20" letter-spacing="3" fill="#cbb682">OCTOBER 2026</text>
+<text x="600" y="642" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="600" font-size="24" letter-spacing="2" fill="#e4d4a0">ENTRY 6–8 PM</text>
+<text x="600" y="672" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="400" font-size="18" letter-spacing="1" fill="#cbb682">PARTY 7:30 ONWARDS</text>
+<line x1="150" y1="758" x2="750" y2="758" stroke="url(#gold)" stroke-width="1" opacity="0.4"/>
+<text x="450" y="800" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="700" font-size="34" letter-spacing="2" fill="url(#gold)">SKYRA LOUNGE &amp; DINING</text>
+<text x="450" y="834" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="400" font-size="18" letter-spacing="1" fill="#cbb682">Sector 2, Greater Noida West</text>
+<text x="450" y="906" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="700" font-size="30" letter-spacing="0" fill="url(#gold)">Unlimited Food &amp; Drinks — On the House</text>
+<text x="450" y="952" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="500" font-size="22" letter-spacing="2" fill="#e4d4a0">SIGNATURE CUISINE · LIVE MUSIC · BYOB</text>
+<g transform="translate(390,990) scale(1.15)"><path d="M60 30C68 16 79 10 90 10C102 10 110 19 110 30C110 41 102 50 90 50C79 50 68 44 60 30C52 16 41 10 30 10C18 10 10 19 10 30C10 41 18 50 30 50C41 50 52 44 60 30Z" fill="none" stroke="url(#mk)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><rect x="26.8" y="23" width="6.4" height="14" rx="3.2" fill="#f7e3a1"/><rect x="86.8" y="23" width="6.4" height="14" rx="3.2" fill="#f7e3a1"/></g>
+<text x="450" y="1068" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="700" font-size="28" letter-spacing="1" fill="url(#gold)">with SyncOut</text>
+<rect x="250" y="1100" width="400" height="56" rx="28" fill="none" stroke="url(#gold)" stroke-width="2"/>
+<text x="450" y="1137" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="700" font-size="30" letter-spacing="3" fill="url(#gold)">ONLY COUPLES</text>
+<path transform="translate(300,1120) scale(0.9)" d="M10 4c-2-3-7-2-7 2 0 3 4 6 7 8 3-2 7-5 7-8 0-4-5-5-7-2z" fill="url(#gold)"/>
+<path transform="translate(576,1120) scale(0.9)" d="M10 4c-2-3-7-2-7 2 0 3 4 6 7 8 3-2 7-5 7-8 0-4-5-5-7-2z" fill="url(#gold)"/>
+</svg>

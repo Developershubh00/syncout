@@ -6,6 +6,7 @@ import { Check, X, Phone, MessageCircle, ChevronDown, LogIn, Ban } from "lucide-
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { ORDER_STATUS } from "@/lib/event-labels";
+import { playConfirm } from "@/lib/sound";
 import { dayLabel, rs } from "@/lib/event-format";
 import { guestWaLink } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
@@ -14,13 +15,13 @@ import type { OrderStatus } from "@/db/schema";
 type O = {
   id: string; code: string; status: OrderStatus; mode: string; name: string; phone: string; email: string;
   eventTitle: string; day: string | null; tierName: string; quantity: number; admits: number; amount: number;
-  utr: string | null; note: string | null; adminNote: string | null; whatsappAt: string | null; createdAt: string; hasAccount: boolean;
+  utr: string | null; note: string | null; adminNote: string | null; whatsappAt: string | null; createdAt: string; hasAccount: boolean; photos?: string[];
 };
 
 export function OrderRow({ o }: { o: O }) {
   const router = useRouter();
   const toast = useToast();
-  const [open, setOpen] = useState(o.status === "payment_submitted");
+  const [open, setOpen] = useState(o.status === "payment_submitted" || o.status === "verifying");
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState(o.adminNote ?? "");
 
@@ -28,6 +29,7 @@ export function OrderRow({ o }: { o: O }) {
     setBusy(label);
     try {
       const res = await fetch(`/api/admin/orders/${o.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (res.ok && (body as { status?: string }).status === "confirmed") playConfirm();
       if (!res.ok) throw new Error((await res.json()).error);
       toast(label === "note" ? "Note saved" : `${o.name}: ${label}`);
       router.refresh();
@@ -43,7 +45,7 @@ export function OrderRow({ o }: { o: O }) {
   const waText = `Hi ${o.name.split(" ")[0]}, this is SyncOut about your booking ${o.code} for ${o.eventTitle}${when ? ` (${when})` : ""}.`;
 
   return (
-    <li className={cn("overflow-hidden rounded-[18px] border bg-surface", o.status === "payment_submitted" ? "border-gold/35" : "border-line")}>
+    <li className={cn("overflow-hidden rounded-[18px] border bg-surface", o.status === "payment_submitted" || o.status === "verifying" ? "border-gold/35" : "border-line")}>
       <button onClick={() => setOpen((x) => !x)} className="w-full p-4 text-left">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -51,7 +53,7 @@ export function OrderRow({ o }: { o: O }) {
             <p className="mt-0.5 truncate text-[12.5px] text-muted">{o.eventTitle}{when ? ` · ${when}` : ""}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <span className="font-display text-[15px] font-extrabold text-gold">{rs(o.amount)}</span>
+            <span className="font-display text-[15px] font-extrabold text-gold">{o.amount > 0 ? rs(o.amount) : "Free"}</span>
             <span className={cn("rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold", look.cls)}>{look.label}</span>
             <ChevronDown className={cn("size-4 text-faint transition-transform", open && "rotate-180")} />
           </div>
@@ -76,6 +78,19 @@ export function OrderRow({ o }: { o: O }) {
             <span className="inline-flex h-9 items-center break-all rounded-lg bg-raised px-3 text-muted">{o.email}</span>
             {!o.hasAccount && <span className="inline-flex h-9 items-center rounded-lg px-1 text-[11.5px] text-faint">no account — in-app alerts won&apos;t reach them</span>}
           </div>
+          {o.photos && o.photos.length > 0 && (
+            <div>
+              <p className="mb-1.5 text-[11.5px] font-semibold uppercase tracking-wide text-gold">Verification photo{o.photos.length > 1 ? "s" : ""}</p>
+              <div className="flex flex-wrap gap-2">
+                {o.photos.map((url) => (
+                  <a key={url} href={url} target="_blank" rel="noreferrer" className="block size-24 overflow-hidden rounded-xl bg-raised">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="Verification" className="size-full object-cover" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
           {o.note && <p className="rounded-xl bg-raised p-3 leading-relaxed text-muted">“{o.note}”</p>}
 
           <div className="flex gap-2">
@@ -84,6 +99,11 @@ export function OrderRow({ o }: { o: O }) {
           </div>
 
           <div className="flex flex-wrap gap-2 pt-1">
+            {o.status === "verifying" && (
+              <Button size="sm" variant="gold" loading={busy === "confirmed"} onClick={() => patch({ status: "confirmed" }, "confirmed")}>
+                <Check className="size-3.5" /> Approve — they're on the list
+              </Button>
+            )}
             {(o.status === "payment_submitted" || o.status === "awaiting_payment") && (
               <Button size="sm" variant="gold" loading={busy === "confirmed"} onClick={() => patch({ status: "confirmed" }, "confirmed")}>
                 <Check className="size-3.5" /> Confirm payment
@@ -100,12 +120,12 @@ export function OrderRow({ o }: { o: O }) {
                 variant="danger"
                 loading={busy === "rejected"}
                 onClick={() => {
-                  const reason = prompt("Reason the guest will see (optional):", "We couldn't verify the payment.");
+                  const reason = prompt("Reason the guest will see (optional):", o.status === "verifying" ? "Sorry, we couldn't confirm your spot for this one." : "We couldn't verify the payment.");
                   if (reason === null) return;
                   patch({ status: "rejected", reason }, "rejected");
                 }}
               >
-                <X className="size-3.5" /> Reject
+                <X className="size-3.5" /> {o.status === "verifying" ? "Decline" : "Reject"}
               </Button>
             )}
             {o.status === "confirmed" && (
