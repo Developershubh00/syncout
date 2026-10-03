@@ -702,7 +702,7 @@ export function TicketFlow({ event, tiers, user }: { event: FlowEvent; tiers: Fl
                             </label>
                           )}
                         </div>
-                        <p className="mt-4 flex items-start gap-2 rounded-2xl bg-white/[0.04] p-3 text-[12px] leading-relaxed text-white/55"><Camera className="mt-0.5 size-4 shrink-0 text-gold" /> Your photo is used once, only to confirm your spot. Couples: a photo of both of you is ideal.</p>
+                        <p className="mt-4 flex items-start gap-2 rounded-2xl bg-white/[0.04] p-3 text-[12px] leading-relaxed text-white/55"><Camera className="mt-0.5 size-4 shrink-0 text-gold" /> Your photo is used once, only to confirm your spot.{tier && tier.admits > 1 ? " A photo of both of you is ideal." : ""} Entries are subject to selection.</p>
                       </motion.div>
                     )}
 

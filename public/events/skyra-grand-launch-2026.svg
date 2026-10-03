@@ -28,8 +28,8 @@
 <text x="450" y="952" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="500" font-size="22" letter-spacing="2" fill="#e4d4a0">SIGNATURE CUISINE · LIVE MUSIC · BYOB</text>
 <g transform="translate(390,990) scale(1.15)"><path d="M60 30C68 16 79 10 90 10C102 10 110 19 110 30C110 41 102 50 90 50C79 50 68 44 60 30C52 16 41 10 30 10C18 10 10 19 10 30C10 41 18 50 30 50C41 50 52 44 60 30Z" fill="none" stroke="url(#mk)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><rect x="26.8" y="23" width="6.4" height="14" rx="3.2" fill="#f7e3a1"/><rect x="86.8" y="23" width="6.4" height="14" rx="3.2" fill="#f7e3a1"/></g>
 <text x="450" y="1068" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="700" font-size="28" letter-spacing="1" fill="url(#gold)">with SyncOut</text>
-<rect x="250" y="1100" width="400" height="56" rx="28" fill="none" stroke="url(#gold)" stroke-width="2"/>
-<text x="450" y="1137" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="700" font-size="30" letter-spacing="3" fill="url(#gold)">ONLY COUPLES</text>
-<path transform="translate(300,1120) scale(0.9)" d="M10 4c-2-3-7-2-7 2 0 3 4 6 7 8 3-2 7-5 7-8 0-4-5-5-7-2z" fill="url(#gold)"/>
-<path transform="translate(576,1120) scale(0.9)" d="M10 4c-2-3-7-2-7 2 0 3 4 6 7 8 3-2 7-5 7-8 0-4-5-5-7-2z" fill="url(#gold)"/>
+<rect x="150" y="1100" width="600" height="56" rx="28" fill="none" stroke="url(#gold)" stroke-width="2"/>
+<text x="450" y="1137" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="700" font-size="28" letter-spacing="2" fill="url(#gold)">COUPLES &amp; SINGLES WELCOME</text>
+<path transform="translate(210,1120) scale(0.85)" d="M10 4c-2-3-7-2-7 2 0 3 4 6 7 8 3-2 7-5 7-8 0-4-5-5-7-2z" fill="url(#gold)"/>
+<path transform="translate(666,1120) scale(0.85)" d="M10 4c-2-3-7-2-7 2 0 3 4 6 7 8 3-2 7-5 7-8 0-4-5-5-7-2z" fill="url(#gold)"/>
 </svg>

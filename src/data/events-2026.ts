@@ -349,26 +349,30 @@ export const SKYRA_LAUNCH: SeedTicketEvent = {
   timeLabel: "Entry 6–8 PM · party 7:30 PM onwards",
   hours: 5,
   description:
-    "Skyra Lounge & Dining opens its doors — an evening of fine dining, live music and a BYOB vibe, hosted with SyncOut. Signature cuisine, curated beverages and an exclusive BYOB experience. Food and drinks are unlimited and on the house for the night. A couples-only launch with a hand-picked crowd — entry is free, but by guestlist only.",
-  highlights: ["Unlimited food & drinks — on the house", "Signature cuisine", "Live music", "Exclusive BYOB experience", "Couples only"],
+    "Skyra Lounge & Dining opens its doors — an evening of fine dining, live music and a BYOB vibe, hosted with SyncOut. Signature cuisine, curated beverages and an exclusive BYOB experience. Food and drinks are unlimited and on the house for the night. Entry is free but by guestlist only, with a hand-picked crowd — pick how you're coming (couple, or single), add a photo, and we'll confirm your spot. Entries are subject to selection.",
+  highlights: ["Unlimited food & drinks — on the house", "Signature cuisine", "Live music", "Exclusive BYOB experience", "Couples & singles welcome"],
   dressCode: "Smart & stylish — dress to impress.",
   organizer: "Skyra Lounge & Dining × SyncOut",
   ageLimit: "21+",
   terms:
-    "Couples only. Entry window 6–8 PM; arrive within it. Free entry by guestlist — a photo is required so the team can confirm a hand-picked crowd. Your spot is confirmed once verified (usually within an hour). The venue makes the final call on entry. Drink responsibly; never drink and drive.",
+    "Entry window 6–8 PM; arrive within it. Free entry by guestlist — a photo is required so the team can confirm a hand-picked crowd, and entries are subject to selection. Your spot is confirmed once verified (usually within an hour). The venue makes the final call on entry. Drink responsibly; never drink and drive.",
   bookingMode: "free",
   requiresVerification: true,
   verificationNote:
-    "Skyra's launch is couples-only with a hand-picked crowd. Upload a clear photo of you (and your partner) so our team can confirm your spot — it's free, and you'll hear back within the hour.",
+    "Skyra's launch has a hand-picked crowd, so every guest adds a photo. Couples: a photo of both of you is ideal. Singles: a clear photo of yourself. It's free, entries are subject to selection, and you'll hear back within the hour.",
   isFeatured: true,
   poster: "/events/skyra-grand-launch-2026.svg",
-  tiers: [{ name: "Couple entry", price: 0, admits: 2, description: "Free · couples only · unlimited food & drinks" }],
+  tiers: [
+    { name: "Couple", price: 0, admits: 2, description: "For two · unlimited food & drinks" },
+    { name: "Single (female)", price: 0, admits: 1, description: "Solo · unlimited food & drinks" },
+    { name: "Single (male)", price: 0, admits: 1, description: "Solo · unlimited food & drinks" },
+  ],
 };
 
 export const SKYRA_ANNOUNCEMENT = {
   slug: "skyra-launch-2026",
   title: "Tonight: Skyra × SyncOut Grand Launch",
-  body: "Skyra Lounge opens in Greater Noida West — fine dining, live music, BYOB, and unlimited food & drinks on the house. Couples only, free entry, hand-picked crowd. Entry 6–8 PM. Get on the list before it fills.",
+  body: "Skyra Lounge opens in Greater Noida West — fine dining, live music, BYOB, and unlimited food & drinks on the house. Couples & singles welcome, free entry, hand-picked crowd (subject to selection). Entry 6–8 PM. Get on the list before it fills.",
   image: "/events/skyra-grand-launch-2026.svg",
   ctaLabel: "Get on the list",
   ctaUrl: "/b/skyra-grand-launch-2026",
